@@ -30,7 +30,7 @@ db = FaceDB(db_url)
 #     print(emb)
 #     print("type of emb", type(emb["embedding"]))
 #     db.add_embedding(img.id, emb["embedding"], bbox)
-image_path = "../lukas.png"
+image_path = "../your_face.png"
 embedding = get_embeddings(image_path)[0]
 res = db.find_similar_embeddings(embedding["embedding"], limit=10)
 for e, dist in res:
