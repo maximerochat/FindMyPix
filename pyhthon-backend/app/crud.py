@@ -28,6 +28,24 @@ async def get_or_create_image(
     return await db.get(Image, image_id)
 
 
+async def get_image(
+    db: AsyncSession, image_id: int
+) -> Image:
+    q = await db.execute(
+        select(Image).where(Image.id == image_id)
+    )
+    return q.scalars().first()
+
+
+async def get_all_images(
+    db: AsyncSession, limit=100
+):
+    q = await db.execute(
+        select(Image).limit(limit)
+    )
+    return q.scalars().all()
+
+
 async def add_embedding(
     db: AsyncSession, image_id: int, bbox: dict, vector: np.ndarray
 ) -> Embedding:
@@ -43,6 +61,13 @@ async def add_embedding(
     await db.commit()
     await db.refresh(emb)
     return emb
+
+
+async def delete_image_from_db(
+    db: AsyncSession, image: Image
+):
+    await db.delete(image)
+    await db.commit()
 
 
 async def list_embeddings(

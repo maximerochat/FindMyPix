@@ -10,7 +10,10 @@ class Image(Base):
     __tablename__ = "images"
     id = Column(Integer, primary_key=True, index=True)
     path = Column(String, unique=True, nullable=False)
-    embeddings = relationship("Embedding", back_populates="image")
+    embeddings = relationship("Embedding",
+                              back_populates="image",
+                              cascade="all, delete-orphan",
+                              lazy="selectin",)
 
 
 class Embedding(Base):

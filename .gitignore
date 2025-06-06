@@ -1,1 +1,8 @@
 .env
+__pycache__
+python-backend/data/*
+pyhthon-backend/data/*
+migrations
+
+node_modules
+package-lock.json
