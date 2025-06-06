@@ -2,18 +2,12 @@
 'use client'
 
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2 } from 'lucide-react'
 import { useProcessingQueue } from '@/contexts/ProcessingContext'
 import ImageGallery from '@/components/ImageGallery'
+import { ImageOut } from "@/api/types"
 
-type ImageOut = {
-  id: number
-  path: string
-  embeddings: any[]
-}
 
 export default function ManagePage() {
   const { add, done, remove } = useProcessingQueue()

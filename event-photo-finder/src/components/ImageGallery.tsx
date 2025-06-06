@@ -1,16 +1,26 @@
 // src/components/ImageGallery.tsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Trash2, Download, X } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog'
 
-export interface GalleryImage {
-	id: number
-	path: string
-}
+import { ImageOut } from '@/api/types'
+
+import {
+	Trash2,
+	Download,
+	X,
+	ExternalLink,
+} from 'lucide-react'
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogClose,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 interface ImageGalleryProps {
-	images: GalleryImage[]
+	images: ImageOut[]
 	title: string
 	emptyMessage: string
 	onRemove?: (id: number) => void
@@ -24,10 +34,38 @@ export default function ImageGallery({
 	onRemove,
 	onDownload,
 }: ImageGalleryProps) {
-	const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+	const [selectedImage, setSelectedImage] =
+		useState<ImageOut | null>(null)
+	const [imageSize, setImageSize] = useState<number | null>(null)
 
 	const getImageUrl = (imagePath: string) =>
 		`http://localhost:8000/files/${imagePath}`
+
+	const formatBytes = (bytes: number, decimals = 2): string => {
+		if (bytes === 0) return '0 Bytes'
+		const k = 1024
+		const dm = Math.max(0, decimals)
+		const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+		const i = Math.floor(Math.log(bytes) / Math.log(k))
+		return (
+			parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+		)
+	}
+
+	useEffect(() => {
+		if (!selectedImage) {
+			setImageSize(null)
+			return
+		}
+		const url = getImageUrl(selectedImage.path)
+		fetch(url, { method: 'HEAD' })
+			.then((res) => {
+				const len = res.headers.get('content-length')
+				if (len) setImageSize(parseInt(len, 10))
+				else setImageSize(null)
+			})
+			.catch(() => setImageSize(null))
+	}, [selectedImage])
 
 	const handleDownloadClick = async (
 		e: React.MouseEvent,
@@ -43,30 +81,38 @@ export default function ImageGallery({
 			const res = await fetch(getImageUrl(imagePath))
 			if (!res.ok) throw new Error(res.statusText)
 			const blob = await res.blob()
-			const blobUrl = URL.createObjectURL(blob)
+			const url = URL.createObjectURL(blob)
 			const a = document.createElement('a')
-			a.href = blobUrl
-			a.download = imagePath.split('/').pop() || `image-${imageId}.jpg`
+			a.href = url
+			a.download =
+				imagePath.split('/').pop() || `image-${imageId}.jpg`
 			document.body.appendChild(a)
 			a.click()
 			document.body.removeChild(a)
-			URL.revokeObjectURL(blobUrl)
+			URL.revokeObjectURL(url)
 		} catch {
 			alert('Failed to download image')
 		}
 	}
 
-	const handleRemoveClick = (e: React.MouseEvent, id: number) => {
+	const handleOpenNewTab = (
+		e: React.MouseEvent,
+		imagePath: string
+	) => {
 		e.stopPropagation()
-		onRemove?.(id)
+		window.open(getImageUrl(imagePath), '_blank')
 	}
 
 	return (
 		<>
 			<section>
-				<h2 className="text-2xl font-semibold mb-4">{title}</h2>
+				<h2 className="text-2xl font-semibold mb-4">
+					{title}
+				</h2>
 				{images.length === 0 ? (
-					<p className="text-muted-foreground">{emptyMessage}</p>
+					<p className="text-muted-foreground">
+						{emptyMessage}
+					</p>
 				) : (
 					<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
 						{images.map((img) => (
@@ -76,7 +122,8 @@ export default function ImageGallery({
 								className="
                   relative group overflow-hidden rounded-lg
                   h-56 bg-slate-100 transition-transform
-                  duration-300 ease-in-out group-hover:scale-105
+                  duration-300 ease-in-out
+                  group-hover:scale-105
                 "
 							>
 								<Image
@@ -94,39 +141,48 @@ export default function ImageGallery({
                     flex flex-col justify-between p-2
                   "
 								>
-									{/* Top: ID + Remove */}
 									<div className="flex justify-between items-start">
 										<span className="bg-white/20 text-white text-xs px-1 rounded">
 											#{img.id}
 										</span>
 										{onRemove && (
 											<button
-												onClick={(e) => handleRemoveClick(e, img.id)}
+												onClick={(e) => {
+													e.stopPropagation()
+													onRemove(img.id)
+												}}
 												className="
-                          bg-red-600/50 p-1 rounded
-                          transition-colors duration-200 ease-in-out
+                          p-1 rounded
+			  bg-red-600/50
+                          transition-colors
                           hover:bg-red-600/80
                         "
 												title="Remove image"
 											>
-												<Trash2 size={16} className="text-white" />
+												<Trash2
+													size={16}
+													className="text-red-200"
+												/>
 											</button>
 										)}
 									</div>
-									{/* Bottom: Download */}
 									<div className="flex justify-end mt-auto">
 										<button
 											onClick={(e) =>
 												handleDownloadClick(e, img.path, img.id)
 											}
 											className="
-                        bg-blue-600/50 p-1 rounded
-                        transition-colors duration-200 ease-in-out
+                        p-1 rounded
+			bg-blue-600/50
+                        transition-colors
                         hover:bg-blue-600/80
                       "
 											title="Download image"
 										>
-											<Download size={16} className="text-white" />
+											<Download
+												size={16}
+												className="text-blue-200"
+											/>
 										</button>
 									</div>
 								</div>
@@ -136,40 +192,81 @@ export default function ImageGallery({
 				)}
 			</section>
 
-			{/* === shadcn Dialog Lightbox === */}
 			<Dialog
 				open={!!selectedImage}
 				onOpenChange={(open) => {
 					if (!open) setSelectedImage(null)
+
 				}}
 			>
-				<DialogContent className="p-0  shadow-none max-w-[90vw]">
-					<DialogHeader className="p-0">
-						<DialogTitle className="">
+				<DialogContent showCloseButton={false} className="p-0 w-[80vw] max-w-none sm:max-w-[80Vvh] max-w-[80vw]">
+					{/* Title bar */}
+					<DialogHeader className=" px-4 py-2">
+						<DialogTitle className="text-left pt-2  w-full">
 							Photo {selectedImage?.id}
 						</DialogTitle>
-						<DialogClose asChild>
-							<button
-								className="
-                  absolute top-2 right-2 z-10 p-1 rounded-full
-                  bg-white/90 hover:bg-white transition
-                "
-								aria-label="Close"
-							>
-								<X size={20} />
-							</button>
-						</DialogClose>
-					</DialogHeader>
+						{imageSize != null && (
+							<p className="mt-1 text-sm text-gray-500">
+								{formatBytes(imageSize)}
+							</p>
+						)}					</DialogHeader>
 
+					{/* Floating button group */}
 					{selectedImage && (
-						<div className="relative w-[90vw] max-w-[1000px] aspect-[4/3] bg-black">
-							<Image
-								src={getImageUrl(selectedImage.path)}
-								alt={`Photo ${selectedImage.id}`}
-								fill
-								className="object-contain"
-								unoptimized
-							/>
+						<div className="absolute top-2 right-2 flex space-x-2">
+							{/* Download */}
+							<Button
+								size="icon"
+								variant="ghost"
+								aria-label="Download"
+								onClick={(e) =>
+									handleDownloadClick(
+										e,
+										selectedImage.path,
+										selectedImage.id
+									)
+								}
+							>
+								<Download className="w-5 h-5" />
+							</Button>
+							{/* Open in new tab */}
+							<Button
+								size="icon"
+								variant="ghost"
+								aria-label="Open in new tab"
+								onClick={(e) =>
+									handleOpenNewTab(e, selectedImage.path)
+								}
+							>
+								<ExternalLink className="w-5 h-5" />
+							</Button>
+							{/* Close */}
+							<DialogClose asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									aria-label="Close"
+								>
+									<X className="w-5 h-5" />
+								</Button>
+							</DialogClose>
+						</div>
+					)}
+
+					{/* Image card */}
+					{selectedImage && (
+						<div className="p-4">
+							<div className="overflow-hidden rounded-lg shadow bg-slate-50">
+								<div className="relative w-full aspect-video">
+									<Image
+										src={getImageUrl(selectedImage.path)}
+										alt={`Photo ${selectedImage.id}`}
+										fill
+										className="object-cover"
+										unoptimized
+									/>
+								</div>
+							</div>
 						</div>
 					)}
 				</DialogContent>
