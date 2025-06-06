@@ -119,17 +119,17 @@ async def upload_image(
 
     # 2) Upsert image record
     img = await get_or_create_image(db, file.filename)
-    time.sleep(10)
+
     # 3) Extract embeddings + bboxes via face_lib
-    # embeds = get_embeddings(path)
-    # if not embeds:
-    #     raise HTTPException(400, detail="No faces detected in image")
-    #
-    # # 4) Persist each embedding
-    # for emb in embeds:
-    #     bbox = emb["facial_area"]
-    #     vector = emb["embedding"]
-    #     await add_embedding(db, img.id, bbox, vector)
+    embeds = get_embeddings(path)
+    if not embeds:
+        raise HTTPException(400, detail="No faces detected in image")
+
+    # 4) Persist each embedding
+    for emb in embeds:
+        bbox = emb["facial_area"]
+        vector = emb["embedding"]
+        await add_embedding(db, img.id, bbox, vector)
 
     # 5) Fetch all embeddings back and return
     embs = await list_embeddings(db, img.id)

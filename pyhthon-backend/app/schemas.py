@@ -32,6 +32,7 @@ class ImageOut(BaseModel):
 class MatchResult(BaseModel):
     embedding_id: int
     image_id: int
+    image_path: str
     distance: float
     threshold: float
     bbox: Dict[str, int]

@@ -1,5 +1,4 @@
-"use client"
-
+'use client'
 import React, {
 	createContext,
 	useContext,
@@ -8,15 +7,15 @@ import React, {
 } from 'react'
 
 export type ProcessingItem = {
-	/** unique id for this task */
 	id: string
-	/** what to show in the UI (e.g. filename) */
 	label: string
+	status: 'processing' | 'done'
 }
 
 type ProcessingContextValue = {
 	items: ProcessingItem[]
-	add: (item: ProcessingItem) => void
+	add: (item: { id: string; label: string }) => void
+	done: (id: string) => void
 	remove: (id: string) => void
 }
 
@@ -27,14 +26,29 @@ const ProcessingContext = createContext<ProcessingContextValue | undefined>(
 export function ProcessingProvider({ children }: { children: ReactNode }) {
 	const [items, setItems] = useState<ProcessingItem[]>([])
 
-	const add = (item: ProcessingItem) =>
-		setItems((prev) => [...prev, item])
+	const add = (item: { id: string; label: string }) =>
+		setItems((prev) => [
+			...prev,
+			{ id: item.id, label: item.label, status: 'processing' },
+		])
 
 	const remove = (id: string) =>
 		setItems((prev) => prev.filter((i) => i.id !== id))
 
+	const done = (id: string) => {
+		setItems((prev) =>
+			prev.map((i) =>
+				i.id === id ? { ...i, status: 'done' } : i
+			)
+		)
+		// auto‐remove after 3s
+		setTimeout(() => {
+			setItems((prev) => prev.filter((i) => i.id !== id))
+		}, 3000)
+	}
+
 	return (
-		<ProcessingContext.Provider value={{ items, add, remove }}>
+		<ProcessingContext.Provider value={{ items, add, done, remove }}>
 			{children}
 		</ProcessingContext.Provider>
 	)
@@ -42,10 +56,9 @@ export function ProcessingProvider({ children }: { children: ReactNode }) {
 
 export function useProcessingQueue(): ProcessingContextValue {
 	const ctx = useContext(ProcessingContext)
-	if (!ctx) {
+	if (!ctx)
 		throw new Error(
 			'useProcessingQueue must be used within a ProcessingProvider'
 		)
-	}
 	return ctx
 }

@@ -1,5 +1,7 @@
+'use client'
 import React from 'react'
 import { useProcessingQueue } from '@/contexts/ProcessingContext'
+import { Loader2, CheckCircle2 } from 'lucide-react'
 
 export default function ProcessingQueue() {
 	const { items } = useProcessingQueue()
@@ -23,16 +25,11 @@ export default function ProcessingQueue() {
 						key={it.id}
 						className="flex items-center space-x-2"
 					>
-						<span
-							className="
-                inline-block
-                h-4 w-4
-                border-2 border-gray-300
-                border-t-gray-600
-                rounded-full
-                animate-spin
-              "
-						/>
+						{it.status === 'processing' ? (
+							<Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+						) : (
+							<CheckCircle2 className="h-4 w-4 text-green-500" />
+						)}
 						<span className="truncate">{it.label}</span>
 					</li>
 				))}

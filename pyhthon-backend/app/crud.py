@@ -88,16 +88,25 @@ async def find_similar(
     threshold = DeepFace.verification.find_threshold("ArcFace", metric)
     vec = vector
     stmt = (
-        select(Embedding, Embedding.vector.cosine_distance(vec).label("distance"))
+        select(Embedding, Image.path.label("image_path"), Embedding.vector.cosine_distance(vec).label("distance"))
+        .join(Image, Embedding.image_id == Image.id)
         .where(Embedding.vector.cosine_distance(vec) <= threshold)
         .order_by(Embedding.vector.cosine_distance(vec))
         .limit(limit)
     )
     res = await db.execute(stmt)
-    pairs = res.all()
-    return [
-        {"embedding_id": e.id, "image_id": e.image_id,
-         "distance": d, "threshold": threshold,
-         "bbox": {"x": e.x, "y": e.y, "w": e.w, "h": e.h}}
-        for e, d in pairs
-    ]
+    rows = res.all()
+    out = []
+    for emb, img_path, dist in rows:
+        out.append({
+            "embedding_id": emb.id,
+            "image_id":     emb.image_id,
+            "image_path":   img_path,
+            "distance":     dist,
+            "threshold":    threshold,
+            "bbox": {
+                "x": emb.x, "y": emb.y,
+                "w": emb.w, "h": emb.h,
+            },
+        })
+    return out
