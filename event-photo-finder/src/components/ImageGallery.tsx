@@ -199,7 +199,7 @@ export default function ImageGallery({
 
 				}}
 			>
-				<DialogContent showCloseButton={false} className="p-0 w-[80vw] max-w-none sm:max-w-[80Vvh] max-w-[80vw]">
+				<DialogContent showCloseButton={false} className="p-0 w-[80vw] max-h-[90vh] overflow-y-auto max-w-none sm:max-w-[80Vvh] max-w-[80vw]">
 					{/* Title bar */}
 					<DialogHeader className=" px-4 py-2">
 						<DialogTitle className="text-left pt-2  w-full">
@@ -253,9 +253,10 @@ export default function ImageGallery({
 						</div>
 					)}
 
-					{/* Image card */}
+					{/* Scrollable body */}
 					{selectedImage && (
-						<div className="p-4">
+						<div className="p-4 space-y-6">
+							{/* Image */}
 							<div className="overflow-hidden rounded-lg shadow bg-slate-50">
 								<div className="relative w-full aspect-video">
 									<Image
@@ -267,6 +268,38 @@ export default function ImageGallery({
 									/>
 								</div>
 							</div>
+
+							{/* Embedding IDs */}
+							{selectedImage.embeddings && selectedImage.embeddings.length > 0 ? (
+								<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+									{selectedImage.embeddings.map((emb) => (
+										<div
+											key={emb.id}
+											className="
+          border
+          rounded-lg
+          bg-white
+          shadow-sm
+          p-4
+          flex
+          flex-col
+          space-y-2
+        "
+										>
+											<p className="text-sm font-medium text-gray-700">
+												Embedding #{emb.id}
+											</p>
+											{/* if you want to show coords/size */}
+											<div className="text-xs text-gray-500 space-y-0.5">
+												<p>x: {emb.x}, y: {emb.y}</p>
+												<p>w: {emb.w}, h: {emb.h}</p>
+											</div>
+										</div>
+									))}
+								</div>
+							) : (
+								<p className="text-gray-500">No embeddings available.</p>
+							)}
 						</div>
 					)}
 				</DialogContent>
