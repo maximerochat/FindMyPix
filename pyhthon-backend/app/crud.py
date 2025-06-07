@@ -1,10 +1,10 @@
+from typing import Any, Dict, List
 import numpy as np
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import Image, Embedding
 from .schemas import EmbeddingIn
-
 from deepface import DeepFace
 
 
@@ -63,6 +63,16 @@ async def add_embedding(
     return emb
 
 
+async def get_embedding_by_id(
+    db: AsyncSession, emb_id: int
+) -> Embedding:
+
+    q = await db.execute(
+        select(Embedding).where(Embedding.id == emb_id)
+    )
+    return q.scalars().first()
+
+
 async def delete_image_from_db(
     db: AsyncSession, image: Image
 ):
@@ -84,29 +94,55 @@ async def find_similar(
     vector: np.ndarray,
     limit: int = 5,
     metric: str = "cosine",
-):
+) -> List[Dict[str, Any]]:
+    # 1) threshold and convenience alias
     threshold = DeepFace.verification.find_threshold("ArcFace", metric)
     vec = vector
-    stmt = (
-        select(Embedding, Image.path.label("image_path"), Embedding.vector.cosine_distance(vec).label("distance"))
+
+    # 2) build a select that computes distance + row_number per image
+    dist = Embedding.vector.cosine_distance(vec).label("distance")
+    row_num = func.row_number().over(
+        partition_by=Embedding.image_id,
+        order_by=dist
+    ).label("row_num")
+
+    base_q = (
+        select(
+            Embedding.id.label("embedding_id"),
+            Embedding.image_id,
+            Image.path.label("image_path"),
+            Embedding.x, Embedding.y, Embedding.w, Embedding.h,
+            dist,
+            row_num,
+        )
         .join(Image, Embedding.image_id == Image.id)
-        .where(Embedding.vector.cosine_distance(vec) <= threshold)
-        .order_by(Embedding.vector.cosine_distance(vec))
+        .where(dist <= threshold)     # only candidates under threshold
+    )
+
+    # 3) wrap it in a subquery, filter row_num == 1, sort by distance, limit
+    subq = base_q.subquery()
+    final_q = (
+        select(subq)
+        .where(subq.c.row_num == 1)    # best per image
+        .order_by(subq.c.distance)     # now global order
         .limit(limit)
     )
-    res = await db.execute(stmt)
-    rows = res.all()
+
+    res = await db.execute(final_q)
+    rows = res.mappings().all()  # each row is a dict
+
+    # 4) return the plain dicts under your MatchResult schema
     out = []
-    for emb, img_path, dist in rows:
+    for r in rows:
         out.append({
-            "embedding_id": emb.id,
-            "image_id":     emb.image_id,
-            "image_path":   img_path,
-            "distance":     dist,
+            "embedding_id": r["embedding_id"],
+            "image_id":     r["image_id"],
+            "image_path":   r["image_path"],
+            "distance":     r["distance"],
             "threshold":    threshold,
             "bbox": {
-                "x": emb.x, "y": emb.y,
-                "w": emb.w, "h": emb.h,
+                "x": r["x"], "y": r["y"],
+                "w": r["w"], "h": r["h"],
             },
         })
     return out

@@ -45,10 +45,12 @@ Ce projet permet :
    ```bash
    git clone https://github.com/votre-utilisateur/FindMyPix.git
    cd FindMyPix
+
    ```
 
 2. Créez un environnement Python virtuel et installez les dépendances  
    ```bash
+   cd python-backend
    python3 -m venv .venv
    source .venv/bin/activate
    pip install --upgrade pip
@@ -131,8 +133,11 @@ Le code d’exemple se trouve dans `main.py` ou via un script CLI :
 
 ```bash
 source .venv/bin/activate
-export DATABASE_URL="postgresql+psycopg2://face_user:...@localhost:5432/face_db"
-python main.py
+uvicorn app.main:app \
+  --reload \
+  --host 0.0.0.0 \
+  --port 8000
+
 ```
 
 Vous pouvez aussi exposer une API (FastAPI/Flask) dans `app.py`, etc.
@@ -142,7 +147,7 @@ Vous pouvez aussi exposer une API (FastAPI/Flask) dans `app.py`, etc.
 ## Lancer le frontend Next.js
 
 ```bash
-cd frontend
+cd event-photo-finder
 npm install    # ou yarn
 npm run dev    # démarrer le serveur de développement
 ```

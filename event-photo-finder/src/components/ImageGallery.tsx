@@ -1,7 +1,7 @@
 // src/components/ImageGallery.tsx
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-
+import Link from 'next/link'
 import { ImageOut } from '@/api/types'
 
 import {
@@ -9,6 +9,7 @@ import {
 	Download,
 	X,
 	ExternalLink,
+	WifiHigh,
 } from 'lucide-react'
 import {
 	Dialog,
@@ -37,10 +38,21 @@ export default function ImageGallery({
 	const [selectedImage, setSelectedImage] =
 		useState<ImageOut | null>(null)
 	const [imageSize, setImageSize] = useState<number | null>(null)
+	const [selectedFaceId, setSelectedFaceId] = useState<number | null>(null)
+	const [faceThumbs, setFaceThumbs] = useState<
+		{ id: number; dataUrl: string }[]
+	>([])
 
 	const getImageUrl = (imagePath: string) =>
 		`http://localhost:8000/files/${imagePath}`
+	useEffect(() => {
+		if (!selectedImage) {
+			setImageSize(null)
+			setSelectedFaceId(null)
+			return
+		}
 
+	}, [selectedImage])
 	const formatBytes = (bytes: number, decimals = 2): string => {
 		if (bytes === 0) return '0 Bytes'
 		const k = 1024
@@ -52,6 +64,58 @@ export default function ImageGallery({
 		)
 	}
 
+	useEffect(() => {
+		if (!selectedImage) {
+			setImageSize(null)
+			setFaceThumbs([])
+			return
+		}
+		fetch(getImageUrl(selectedImage.path), { method: 'HEAD' })
+			.then((res) => {
+				const len = res.headers.get('content-length')
+				if (len) setImageSize(parseInt(len, 10))
+				else setImageSize(null)
+			})
+			.catch(() => setImageSize(null))
+
+		// ---- NEW: crop faces into small data-urls ----
+		if (selectedImage.embeddings && selectedImage.embeddings.length) {
+			const img = new window.Image()
+			img.crossOrigin = 'anonymous'
+			img.src = getImageUrl(selectedImage.path)
+			img.onload = () => {
+				const thumbs = selectedImage.embeddings!
+					.map((emb) => {
+						// crop region emb.x,emb.y,emb.w,emb.h
+						const circle_padding = 0.03 * img.width
+
+						const canvas = document.createElement('canvas')
+						const width = emb.w + circle_padding
+						const height = emb.h + circle_padding
+						canvas.width = width
+						canvas.height = height
+						const ctx = canvas.getContext('2d')
+						if (!ctx) return null
+						ctx.drawImage(
+							img,
+							emb.x - circle_padding / 2,
+							emb.y - circle_padding / 2,
+							width,
+							height,
+							0,
+							0,
+							width,
+							height,
+						)
+						// export small data-url
+						return { id: emb.id, dataUrl: canvas.toDataURL('image/jpeg') }
+					})
+					.filter((x): x is { id: number; dataUrl: string } => !!x)
+				setFaceThumbs(thumbs)
+			}
+			img.onerror = () => setFaceThumbs([])
+		}
+	}, [selectedImage])
 	useEffect(() => {
 		if (!selectedImage) {
 			setImageSize(null)
@@ -256,49 +320,45 @@ export default function ImageGallery({
 					{/* Scrollable body */}
 					{selectedImage && (
 						<div className="p-4 space-y-6">
-							{/* Image */}
 							<div className="overflow-hidden rounded-lg shadow bg-slate-50">
 								<div className="relative w-full aspect-video">
 									<Image
 										src={getImageUrl(selectedImage.path)}
 										alt={`Photo ${selectedImage.id}`}
 										fill
-										className="object-cover"
 										unoptimized
+										style={{ objectFit: 'cover' }}
 									/>
 								</div>
 							</div>
 
-							{/* Embedding IDs */}
-							{selectedImage.embeddings && selectedImage.embeddings.length > 0 ? (
-								<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-									{selectedImage.embeddings.map((emb) => (
-										<div
-											key={emb.id}
-											className="
-          border
-          rounded-lg
-          bg-white
-          shadow-sm
-          p-4
-          flex
-          flex-col
-          space-y-2
-        "
+							{/* FACE PICKER */}
+							{faceThumbs.length > 0 ? (
+								<div className="flex flex-wrap gap-2 p-4">
+									{faceThumbs.map((thumb) => (
+										<Link
+											key={thumb.id}
+											href={`/search/${thumb.id}`}
+											className={`
+          block                  /* make the link a block so it wraps the 48×48 div */
+          w-12 h-12
+          rounded-full
+          overflow-hidden
+          transition
+          hover:scale-105
+        `}
 										>
-											<p className="text-sm font-medium text-gray-700">
-												Embedding #{emb.id}
-											</p>
-											{/* if you want to show coords/size */}
-											<div className="text-xs text-gray-500 space-y-0.5">
-												<p>x: {emb.x}, y: {emb.y}</p>
-												<p>w: {emb.w}, h: {emb.h}</p>
-											</div>
-										</div>
-									))}
+											<img
+												src={thumb.dataUrl}
+												alt={`Face ${thumb.id}`}
+												className="w-full h-full object-cover cursor-pointer"
+											/>
+										</Link>))}
 								</div>
 							) : (
-								<p className="text-gray-500">No embeddings available.</p>
+								<p className="text-gray-500 p-4">
+									No faces detected.
+								</p>
 							)}
 						</div>
 					)}

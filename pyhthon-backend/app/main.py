@@ -3,6 +3,7 @@ import time
 import shutil
 from typing import List
 
+from app.models import Embedding
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .db import engine, Base
 from .crud import (
+    get_embedding_by_id,
     get_or_create_image,
     add_embedding,
     list_embeddings,
@@ -171,6 +173,28 @@ async def match_image(
     # for now just take the first face
     target = query_embeds[0]["embedding"]
 
+    # 3) find nearest neighbors in DB
+    results = await find_similar(db, target, limit=10, metric="cosine")
+    if not results:
+        # empty list => no match under threshold
+        return []
+
+    return [MatchResult(**r) for r in results]
+
+
+@app.get("/match/{emb_id}", response_model=List[MatchResult])
+async def match_image_with_id(
+    emb_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+
+    # 2) extract embeddings from query
+    query_embeds: Embedding = await get_embedding_by_id(db, emb_id)
+    if not query_embeds:
+        raise HTTPException(400, detail="No face found in query image")
+    print(query_embeds)
+    # for now just take the first face
+    target = query_embeds.vector
     # 3) find nearest neighbors in DB
     results = await find_similar(db, target, limit=10, metric="cosine")
     if not results:
