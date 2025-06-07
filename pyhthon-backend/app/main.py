@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
 
+
 from .db import engine, Base
 from .crud import (
     get_embedding_by_id,
@@ -20,7 +21,7 @@ from .crud import (
     delete_image_from_db,
     get_all_images,
 )
-from .schemas import ImageOut, MatchResult
+from .schemas import EmbeddingOut, ImageOut, MatchResult
 from .deps import get_db
 from app.face_lib import get_embeddings  # <— our helper
 
@@ -179,7 +180,22 @@ async def match_image(
         # empty list => no match under threshold
         return []
 
-    return [MatchResult(**r) for r in results]
+    results = [MatchResult(**r) for r in results]
+    for res in results:
+        embs = await list_embeddings(db, res.image_id)
+        embs_data: List[EmbeddingOut] = [
+            {
+                "id":         e.id,
+                "image_id":   e.image_id,
+                "x":          e.x,
+                "y":          e.y,
+                "w":          e.w,
+                "h":          e.h,
+            }
+            for e in embs
+        ]
+        res.other_embeddings = embs_data
+    return results
 
 
 @app.get("/match/{emb_id}", response_model=List[MatchResult])
@@ -197,10 +213,21 @@ async def match_image_with_id(
     target = query_embeds.vector
     # 3) find nearest neighbors in DB
     results = await find_similar(db, target, limit=10, metric="cosine")
-    if not results:
-        # empty list => no match under threshold
-        return []
 
+    for res in results:
+        embs = await list_embeddings(db, res["image_id"])
+        embs_data: List[EmbeddingOut] = [
+            {
+                "id":         e.id,
+                "image_id":   e.image_id,
+                "x":          e.x,
+                "y":          e.y,
+                "w":          e.w,
+                "h":          e.h,
+            }
+            for e in embs
+        ]
+        res["other_embeddings"] = embs_data
     return [MatchResult(**r) for r in results]
 
 

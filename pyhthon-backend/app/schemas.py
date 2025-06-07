@@ -36,3 +36,4 @@ class MatchResult(BaseModel):
     distance: float
     threshold: float
     bbox: Dict[str, int]
+    other_embeddings: List[EmbeddingOut]
