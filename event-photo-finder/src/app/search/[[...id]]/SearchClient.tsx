@@ -1,5 +1,6 @@
 'use client';
 
+import axios from 'axios';
 import { useState, useEffect, ChangeEvent, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { useProcessingQueue } from '@/contexts/ProcessingContext';
 import ImageGallery from '@/components/ImageGallery';
 import { MatchResult, ImageOut } from '@/api/types';
+import apiClient from '@/lib/axios';
 
 interface SearchClientProps {
   faceId: string | null;
@@ -44,20 +46,24 @@ export default function SearchClient({ faceId }: SearchClientProps) {
     add({ id: procId, label: `Uploading ${selectedFile.name}…` });
 
     try {
-      const res = await fetch('http://localhost:8000/match', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Failed to match image.');
-      }
-      const data: MatchResult[] = await res.json();
-      setResults(data);
+      // Axios will detect FormData and set the correct Content-Type header
+      const response = await apiClient.post<MatchResult[]>("/match", formData);
+
+      // response.data is already parsed JSON
+      setResults(response.data);
       done(procId);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Unexpected error.');
+
+      if (axios.isAxiosError(err)) {
+        // Try to pull a `detail` or `message` field from the error response
+        const detail = (err.response?.data as any)?.detail
+          || (err.response?.data as any)?.message;
+        setError(detail ?? "Failed to match image.");
+      } else {
+        setError((err as Error).message ?? "Unexpected error.");
+      }
+
       removeFromQueue(procId);
     } finally {
       setIsLoading(false);
@@ -74,17 +80,29 @@ export default function SearchClient({ faceId }: SearchClientProps) {
     add({ id: procId, label: `Looking at embedding #${id}` });
 
     try {
-      const res = await fetch(`http://localhost:8000/match/${id}`);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Failed to match image.');
-      }
-      const data: MatchResult[] = await res.json();
-      setResults(data);
+      // if your apiClient.baseURL === "http://localhost:8000",
+      // you can just do `/match/${id}` here
+      const response = await apiClient.get<MatchResult[]>(`/match/${id}`);
+
+      // axios unwraps JSON into `response.data`
+      setResults(response.data);
       done(procId);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Unexpected error.');
+
+      // AxiosError guard
+      if (axios.isAxiosError(err)) {
+        // server responded with a body
+        const detail =
+          (err.response?.data as any)?.detail ??
+          // some APIs might use `.message`
+          (err.response?.data as any)?.message;
+        setError(detail ?? "Failed to match image.");
+      } else {
+        // non-Axios error
+        setError((err as Error).message || "Unexpected error.");
+      }
+
       removeFromQueue(procId);
     } finally {
       setIsLoading(false);

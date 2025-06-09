@@ -1,5 +1,6 @@
 // app/search/[[...id]]/page.tsx
 import SearchClient from './SearchClient'
+import { AuthGuard } from '@/components/auth/AuthGuard'
 
 interface PageProps {
   params: { id?: string[] }
@@ -10,5 +11,9 @@ export default function SearchPage({ params }: PageProps) {
   const faceId = params.id?.[0] ?? null
 
   // hand off to the client component
-  return <SearchClient faceId={faceId} />
+  return (
+    <AuthGuard>
+      <SearchClient faceId={faceId} />
+    </AuthGuard>
+  )
 }

@@ -4,51 +4,75 @@ Un service de recherche de visages par similarité d'embeddings, avec un backend
 
 ---
 
+## TODO
+
+High priority:
+
+- Authentication
+- Create event
+- Assign picture to event
+
+Mid:
+
+- Support easy upload of large amount of folder
+- On the backend create a queuing system for the treatment of large batch of files
+- Allow search with multiple pictures
+- Show some markers around the face identified
+
+Low:
+
+- Better confirm button when deleting
+- More status info when uploading (pending, maybe a pogress bar depending of the number of faces discovered?)
+
+---
+
 ## Table des matières
 
-1. [Description](#description)  
-2. [Prérequis](#prérequis)  
-3. [Installation](#installation)  
-4. [Configuration de la base de données](#configuration-de-la-base-de-données)  
-5. [Migrations Alembic](#migrations-alembic)  
-6. [Reset / Réinitialisation rapide](#reset--réinitialisation-rapide)  
-7. [Lancer le backend](#lancer-le-backend)  
-8. [Lancer le frontend Next.js](#lancer-le-frontend-nextjs)  
-9. [Contribuer](#contribuer)  
+1. [Description](#description)
+2. [Prérequis](#prérequis)
+3. [Installation](#installation)
+4. [Configuration de la base de données](#configuration-de-la-base-de-données)
+5. [Migrations Alembic](#migrations-alembic)
+6. [Reset / Réinitialisation rapide](#reset--réinitialisation-rapide)
+7. [Lancer le backend](#lancer-le-backend)
+8. [Lancer le frontend Next.js](#lancer-le-frontend-nextjs)
+9. [Contribuer](#contribuer)
 
 ---
 
 ## Description
 
 Ce projet permet :
-- d’extraire des embeddings de visages à partir d’images,  
-- de les stocker dans une base PostgreSQL enrichie de l’extension pgvector,  
-- de faire des recherches de plus proches voisins (ANN) via SQL.  
+
+- d’extraire des embeddings de visages à partir d’images,
+- de les stocker dans une base PostgreSQL enrichie de l’extension pgvector,
+- de faire des recherches de plus proches voisins (ANN) via SQL.
 - de proposer une interface web simple en Next.js pour l’upload et la recherche.
 
 ---
 
 ## Prérequis
 
-- Linux / macOS / Windows WSL  
-- Git  
-- Python 3.8+  
-- Node.js 16+ et npm/yarn  
-- PostgreSQL 14+  
+- Linux / macOS / Windows WSL
+- Git
+- Python 3.8+
+- Node.js 16+ et npm/yarn
+- PostgreSQL 14+
 - `pgvector` (extension PostgreSQL)
 
 ---
 
 ## Installation
 
-1. Clonez le dépôt  
+1. Clonez le dépôt
+
    ```bash
    git clone https://github.com/votre-utilisateur/FindMyPix.git
    cd FindMyPix
 
    ```
 
-2. Créez un environnement Python virtuel et installez les dépendances  
+2. Créez un environnement Python virtuel et installez les dépendances
    ```bash
    cd python-backend
    python3 -m venv .venv
@@ -61,7 +85,8 @@ Ce projet permet :
 
 ## Configuration de la base de données
 
-1. Installez PostgreSQL et l’extension pgvector  
+1. Installez PostgreSQL et l’extension pgvector
+
    ```bash
    sudo apt update
    sudo apt install -y postgresql postgresql-contrib build-essential
@@ -69,7 +94,8 @@ Ce projet permet :
    cd pgvector && make && sudo make install && cd ..
    ```
 
-2. Démarrez PostgreSQL et créez l’utilisateur/la base  
+2. Démarrez PostgreSQL et créez l’utilisateur/la base
+
    ```bash
    sudo systemctl start postgresql
    sudo -u postgres psql <<SQL
@@ -80,7 +106,7 @@ Ce projet permet :
    \q
    ```
 
-3. Exportez l’URL de connexion  
+3. Exportez l’URL de connexion
    ```bash
    export DATABASE_URL="postgresql+psycopg2://face_user:votre_mot_de_passe@localhost:5432/face_db"
    ```
@@ -89,20 +115,20 @@ Ce projet permet :
 
 ## Migrations Alembic
 
-1. Initialisez (si ce n’est pas déjà fait)  
+1. Initialisez (si ce n’est pas déjà fait)
    ```bash
    alembic init migrations
    ```
-2. Vérifiez que dans `migrations/env.py` vous importez bien `Base` et définissez  
+2. Vérifiez que dans `migrations/env.py` vous importez bien `Base` et définissez
    ```python
    from your_module import Base
    target_metadata = Base.metadata
    ```
-3. Générez la migration initiale  
+3. Générez la migration initiale
    ```bash
    alembic revision --autogenerate -m "create faces schema"
    ```
-4. Appliquez-la  
+4. Appliquez-la
    ```bash
    alembic upgrade head
    ```
@@ -155,16 +181,3 @@ npm run dev    # démarrer le serveur de développement
 Ouvrez http://localhost:3000 dans votre navigateur.
 
 ---
-
-## Contribuer
-
-1. Forkez le dépôt  
-2. Créez une branche feature/fix (`git checkout -b feature/ma-nouvelle-fonction`)  
-3. Codez, testez, puis  
-   ```bash
-   git commit -am "Ajout: description de la MAJ"
-   git push origin feature/ma-nouvelle-fonction
-   ```  
-4. Ouvrez une Pull Request  
-
-Merci et bonne contribution !

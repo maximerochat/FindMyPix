@@ -1,13 +1,14 @@
 import os
 import time
 import shutil
-from typing import List
+from typing import List, Dict
 
 from app.models import Embedding
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
+from app.helpers import get_current_user
 
 
 from .db import engine, Base
@@ -98,7 +99,7 @@ async def delete_image(
 
 
 @app.get("/images", response_model=List[ImageOut])
-async def list_images(db: AsyncSession = Depends(get_db)):
+async def list_images(db: AsyncSession = Depends(get_db), current_user: Dict = Depends(get_current_user)):
     """
     Returns all images + their embeddings.
     Each `path` field is just the filename, clients can fetch the
@@ -178,11 +179,10 @@ async def match_image(
     results = await find_similar(db, target, limit=10, metric="cosine")
     if not results:
         # empty list => no match under threshold
-        return []
+        return [signin]
 
-    results = [MatchResult(**r) for r in results]
     for res in results:
-        embs = await list_embeddings(db, res.image_id)
+        embs = await list_embeddings(db, res["image_id"])
         embs_data: List[EmbeddingOut] = [
             {
                 "id":         e.id,
@@ -194,8 +194,8 @@ async def match_image(
             }
             for e in embs
         ]
-        res.other_embeddings = embs_data
-    return results
+        res["other_embeddings"] = embs_data
+    return [MatchResult(**r) for r in results]
 
 
 @app.get("/match/{emb_id}", response_model=List[MatchResult])
