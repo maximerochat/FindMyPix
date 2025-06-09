@@ -13,10 +13,10 @@ async def validate_token(token: str) -> Optional[Dict]:
     """
     try:
         nextauth_url = os.getenv("NEXTAUTH_URL", "http://localhost:3000")
-        test_tok = "eyJhbGciOiJkaXIJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoiWjdYVUwwLW4wOHMtVHFMaHR2eVV4Y25zekJzLXlZTzhpbG82cVEzWGZaTUpOUVd0TDN1dUNtcExwWHNFR01ZVElWY2hVWDZWV3hXcHBKbTN2MUhrZ3cifQ..g-HN1FchVvXl3nFclY-h9A.SmMBlFVPEmhHrBLU9ReN0Xv7WircvGG9fwNoEpzOEqCn5_Xx99UCv9YAY4OBkYHfvGCMuitcrNryrDWR1OhMhwQHqiG53SSj-FO_US9hN81ZXL1BembCAnGwDUEwBg5spTs38Dj7Y-mUfQKodVSk9KODFl4OpUSXEpCKf541r3oQsP38nVP9i-Jtno7X5iAQblmArp-NUu51s8FtgkfKkmU0ZCTVIekOeVqkqUM5CHL9Z_leZEN8VpXNX0Hrsxf-8-4x5TS03dagB80tbZj70KCSKIyiWYy0QfyrtqT-tMs.4_FG__-oM6EQvvbZ8ouEtYmUGVaxvOWacV9THlkA-wI"
+        test_tok = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoiWjdYVUwwLW4wOHMtVHFMaHR2eVV4Y25zekJzLXlZTzhpbG82cVEzWGZaTUpOUVd0TDN1dUNtcExwWHNFR01ZVElWY2hVWDZWV3hXcHBKbTN2MUhrZ3cifQ..g-HN1FchVvXl3nFclY-h9A.SmMBlFVPEmhHrBLU9ReN0Xv7WircvGG9fwNoEpzOEqCn5_Xx99UCv9YAY4OBkYHfvGCMuitcrNryrDWR1OhMhwQHqiG53SSj-FO_US9hN81ZXL1BembCAnGwDUEwBg5spTs38Dj7Y-mUfQKodVSk9KODFl4OpUSXEpCKf541r3oQsP38nVP9i-Jtno7X5iAQblmArp-NUu51s8FtgkfKkmU0ZCTVIekOeVqkqUM5CHL9Z_leZEN8VpXNX0Hrsxf-8-4x5TS03dagB80tbZj70KCSKIyiWYy0QfyrtqT-tMs.4_FG__-oM6EQvvbZ8ouEtYmUGVaxvOWacV9THlkA-wI"
         response = requests.post(
             f"{nextauth_url}/api/auth/validate",
-            json={"token": test_tok},
+            json={"token": token},
             timeout=5,
             headers={"Content-Type": "application/json"}
         )
