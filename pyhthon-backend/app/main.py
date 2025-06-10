@@ -196,19 +196,20 @@ async def delete_image(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.get("/images", response_model=List[ImageOut])
-async def list_images(db: AsyncSession = Depends(get_db), current_user: Dict = Depends(get_current_user)):
+@app.get("/images/{event_id}", response_model=List[ImageOut])
+async def list_images(event_id: int, db: AsyncSession = Depends(get_db), current_user: Dict = Depends(get_current_user)):
     """
     Returns all images + their embeddings.
     Each `path` field is just the filename, clients can fetch the
     actual image at /files/{path}.
     """
-    images = await get_all_images(db)
+    images = await get_all_images(db, event_id)
     return images
 
 
-@app.post("/images", response_model=ImageOut)
+@app.post("/images/{event_id}", response_model=ImageOut)
 async def upload_image(
+    event_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: Dict = Depends(get_current_user),
@@ -221,7 +222,7 @@ async def upload_image(
         f.write(await file.read())
 
     # 2) Upsert image record
-    img = await get_or_create_image(db, file.filename)
+    img = await get_or_create_image(db, file.filename, event_id)
 
     # 3) Extract embeddings + bboxes via face_lib
     embeds = get_embeddings(path)

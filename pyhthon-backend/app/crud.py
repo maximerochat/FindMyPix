@@ -113,9 +113,9 @@ async def delete_event(
 
 
 async def get_or_create_image(
-    db: AsyncSession, path: str
+    db: AsyncSession, path: str, event_id: int
 ) -> Image:
-    stmt = pg_insert(Image).values(path=path)
+    stmt = pg_insert(Image).values(path=path, event_id=event_id)
     stmt = stmt.on_conflict_do_nothing(
         index_elements=[Image.path]
     ).returning(Image.id)
@@ -142,12 +142,14 @@ async def get_image(
 
 
 async def get_all_images(
-    db: AsyncSession, limit=100
+    db: AsyncSession, event_id, limit=100
 ):
-    q = await db.execute(
-        select(Image).limit(limit)
-    )
-    return q.scalars().all()
+    q = await get_event(db, event_id)
+
+    if q:
+        return q.images
+
+    return []
 
 
 async def add_embedding(
