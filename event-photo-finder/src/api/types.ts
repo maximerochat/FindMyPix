@@ -21,5 +21,17 @@ export interface MatchResult {
   distance: number;
   threshold: number;
   bbox: { x: number; y: number; w: number; h: number };
-  other_embeddings: Embedding[]
+  other_embeddings: Embedding[];
+}
+
+export interface EventIn {
+  date: string | Date;
+  description?: string;
+}
+
+export interface EventOut {
+  id: number;
+  is_owner: boolean;
+  date: string;
+  description?: string;
 }

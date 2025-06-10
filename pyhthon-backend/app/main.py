@@ -1,7 +1,7 @@
 import os
 import time
 import shutil
-from typing import List, Dict
+from typing import Any, List, Dict
 
 from app.models import Embedding
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Response
@@ -9,7 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
 from app.helpers import get_current_user
-
+from uuid import UUID
+from datetime import datetime
 
 from .db import engine, Base
 from .crud import (
@@ -21,8 +22,13 @@ from .crud import (
     get_image,
     delete_image_from_db,
     get_all_images,
+    create_event,
+    get_event,
+    get_all_events,
+    update_event,
+    delete_event,
 )
-from .schemas import EmbeddingOut, ImageOut, MatchResult
+from .schemas import EmbeddingOut, ImageOut, MatchResult, EventIn, EventOut
 from .deps import get_db
 from app.face_lib import get_embeddings  # <— our helper
 
@@ -61,6 +67,97 @@ async def on_startup():
         await conn.run_sync(Base.metadata.create_all)
 
 
+@app.post("/events", response_model=EventOut, status_code=201)
+async def api_create_event(
+    payload: EventIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    ev = await create_event(db, user_id=current_user["id"], payload=payload)
+    return EventOut(
+        id=ev.id,
+        date=ev.date,
+        description=ev.description,
+        is_owner=True,    # creator is always owner
+    )
+
+
+@app.get("/events/{event_id}", response_model=EventOut)
+async def api_get_event(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    ev = await db.get(Event, event_id)
+    if not ev:
+        raise HTTPException(404, "Event not found")
+    return EventOut(
+        id=ev.id,
+        date=ev.date,
+        description=ev.description,
+        is_owner=(ev.user_id == current_user["id"]),
+    )
+
+
+@app.get("/events", response_model=List[EventOut])
+async def api_list_events(
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    evs = await get_all_events(db)
+
+    me = current_user["id"]
+    return [
+        EventOut(
+            id=e.id,
+            date=e.date,
+            description=e.description,
+            is_owner=(str(e.user_id) == me),
+        )
+        for e in evs
+    ]
+
+
+@app.put(
+    "/events/{event_id}",
+    response_model=EventOut,
+    responses={404: {"description": "Event not found"}},
+)
+async def api_update_event(
+    event_id: int,
+    payload: EventIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    ev = await update_event(db, event_id, payload=payload, user_id=current_user["id"])
+    if not ev:
+        raise HTTPException(404, "Event not found")
+
+    return EventOut(
+        id=ev.id,
+        date=ev.date,
+        description=ev.description,
+        is_owner=True,
+    )
+    return ev
+
+
+@app.delete(
+    "/events/{event_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={404: {"description": "Event not found"}},
+)
+async def api_delete_event(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    ok = await delete_event(db, event_id, current_user["id"])
+    if not ok:
+        raise HTTPException(404, "Event not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.delete(
     "/images/{image_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -69,6 +166,7 @@ async def on_startup():
 async def delete_image(
     image_id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: Dict = Depends(get_current_user),
 ):
     # 1) Look up the image
     image = await get_image(db, image_id)
@@ -113,6 +211,7 @@ async def list_images(db: AsyncSession = Depends(get_db), current_user: Dict = D
 async def upload_image(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    current_user: Dict = Depends(get_current_user),
 ):
     # 1) Save upload to local disk (or S3, etc.)
     save_dir = IMAGE_DIR
@@ -179,11 +278,11 @@ async def match_image(
     results = await find_similar(db, target, limit=10, metric="cosine")
     if not results:
         # empty list => no match under threshold
-        return [signin]
+        return []
 
     for res in results:
         embs = await list_embeddings(db, res["image_id"])
-        embs_data: List[EmbeddingOut] = [
+        embs_data: List[dict[str, Any]] = [
             {
                 "id":         e.id,
                 "image_id":   e.image_id,
@@ -202,21 +301,19 @@ async def match_image(
 async def match_image_with_id(
     emb_id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: Dict = Depends(get_current_user),
 ):
 
     # 2) extract embeddings from query
     query_embeds: Embedding = await get_embedding_by_id(db, emb_id)
     if not query_embeds:
         raise HTTPException(400, detail="No face found in query image")
-    print(query_embeds)
-    # for now just take the first face
-    target = query_embeds.vector
     # 3) find nearest neighbors in DB
-    results = await find_similar(db, target, limit=10, metric="cosine")
+    results = await find_similar(db, query_embeds.vector, limit=10, metric="cosine")
 
     for res in results:
         embs = await list_embeddings(db, res["image_id"])
-        embs_data: List[EmbeddingOut] = [
+        embs_data: List[dict[str, Any]] = [
             {
                 "id":         e.id,
                 "image_id":   e.image_id,
@@ -231,6 +328,6 @@ async def match_image_with_id(
     return [MatchResult(**r) for r in results]
 
 
-@app.get("/health")
+@ app.get("/health")
 async def health():
     return {"status": "ok"}

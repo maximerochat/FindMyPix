@@ -1,11 +1,115 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 import numpy as np
 from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from .models import Image, Embedding
-from .schemas import EmbeddingIn
+from sqlalchemy.sql.functions import user
+from .models import Image, Embedding, Event
+from .schemas import EmbeddingIn, EventIn
 from deepface import DeepFace
+
+
+async def create_event(
+    db: AsyncSession,
+    user_id: str,
+    *,
+    payload: EventIn
+) -> Event:
+    """
+    Create a new Event from an EventIn schema.
+    """
+    ev = Event(
+        user_id=user_id,
+        date=payload.date,
+        description=payload.description,
+    )
+    db.add(ev)
+    await db.commit()
+    await db.refresh(ev)
+    return ev
+
+
+async def get_event(
+    db: AsyncSession,
+    event_id: int
+) -> Optional[Event]:
+    """
+    Fetch one Event by its primary key.
+    """
+    q = await db.execute(
+        select(Event).where(Event.id == event_id)
+    )
+    return q.scalars().first()
+
+
+async def get_all_events(
+    db: AsyncSession,
+    limit: int = 100,
+    offset: int = 0
+) -> List[Event]:
+    """
+    Fetch a page of Events.
+    """
+    q = await db.execute(
+        select(Event).order_by(Event.date.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    return q.scalars().all()
+
+
+async def update_event(
+    db: AsyncSession,
+    event_id: int,
+    *,
+    payload: EventIn,
+    user_id: str
+) -> Optional[Event]:
+    """
+    Update an existing Event. Returns the updated object, or None if not found.
+    """
+    q = await db.execute(
+        select(Event).where(Event.id == event_id)
+    )
+    ev = q.scalars().first()
+    if not ev:
+        return None
+
+    if ev.user_id != user_id:
+        return None
+
+    ev.user_id = payload.user_id
+    ev.date = payload.date
+    ev.description = payload.description
+
+    db.add(ev)
+    await db.commit()
+    await db.refresh(ev)
+    return ev
+
+
+async def delete_event(
+    db: AsyncSession,
+    event_id: int,
+    user_id: str,
+) -> bool:
+    """
+    Delete one Event by its ID. Returns True if deleted, False if not found.
+    """
+    q = await db.execute(
+        select(Event).where(Event.id == event_id and Event.user_id == user_id)
+    )
+    ev = q.scalars().first()
+    if not ev:
+        return False
+
+    if ev.user_id != user_id:
+        return False
+
+    await db.delete(ev)
+    await db.commit()
+    return True
 
 
 async def get_or_create_image(
@@ -91,7 +195,7 @@ async def list_embeddings(
 
 async def find_similar(
     db: AsyncSession,
-    vector: np.ndarray,
+    vector: List[float],
     limit: int = 5,
     metric: str = "cosine",
 ) -> List[Dict[str, Any]]:

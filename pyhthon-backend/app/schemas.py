@@ -1,5 +1,7 @@
 from typing import List, Optional, Dict
+from uuid import UUID
 from pydantic import BaseModel, ConfigDict
+from datetime import datetime
 
 
 class EmbeddingIn(BaseModel):
@@ -17,6 +19,20 @@ class EmbeddingOut(BaseModel):
     y: float
     w: float
     h: float
+
+
+class EventIn(BaseModel):
+    date: datetime
+    description: Optional[str] = None
+
+
+class EventOut(BaseModel):
+    id:          int
+    date:        datetime
+    description: Optional[str] = None
+    is_owner:    bool
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ImageCreate(BaseModel):

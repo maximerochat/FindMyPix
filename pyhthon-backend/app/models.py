@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, ForeignKey, Float, Index
+    UUID, Column, Integer, String, ForeignKey, Float, Index, DateTime
 )
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
@@ -14,6 +14,18 @@ class Image(Base):
                               back_populates="image",
                               cascade="all, delete-orphan",
                               lazy="selectin",)
+    event = relationship(
+        "Event",
+        back_populates="images",
+        lazy="joined",  # or “selectin” if you prefer
+    )
+
+    event_id = Column(
+        Integer,
+        ForeignKey("events.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
 
 class Embedding(Base):
@@ -37,3 +49,13 @@ class Embedding(Base):
             postgresql_with={"lists": 100},
         ),
     )
+
+
+class Event(Base):
+    __tablename__ = "events"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(UUID, nullable=False)
+    date = Column(DateTime(timezone=True), nullable=False)
+    description = Column(String)
+    images = relationship("Image", back_populates="event",
+                          cascade="all, delete-orphan", lazy="selectin")

@@ -3,6 +3,9 @@ import os
 from typing import Optional, Dict
 from fastapi import FastAPI, HTTPException, Depends, Header
 
+from app.schemas import EventOut
+from app.models import Event
+
 # Token validation function
 
 
