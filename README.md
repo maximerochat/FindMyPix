@@ -8,15 +8,12 @@ Un service de recherche de visages par similarité d'embeddings, avec un backend
 
 High priority:
 
-- Authentication
-- Create event
-- Assign picture to event
-
 Mid:
 
 - Support easy upload of large amount of folder
 - On the backend create a queuing system for the treatment of large batch of files
 - Allow search with multiple pictures
+- Pageing system for large amount of images on frontend
 - Show some markers around the face identified
 
 Low:

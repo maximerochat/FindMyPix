@@ -1,12 +1,11 @@
 // src/app/layout.tsx
 import './globals.css';
-import Link from 'next/link';
 import { ReactNode } from 'react';
 import { ProcessingProvider } from '@/contexts/ProcessingContext';
 import ProcessingQueue from '@/components/ProcessingQueue';
 import { SessionProvider } from 'next-auth/react';
-import { auth, signOut } from '@/lib/auth';
-import { LoginButton } from '@/components/auth/LoginButton';
+import { auth } from '@/lib/auth';
+import ModernLayout from '@/components/ModernLayout';
 
 export const metadata = {
   title: 'Event Photo Finder',
@@ -25,42 +24,9 @@ export default async function RootLayout({
       <body className="bg-background text-foreground">
         <SessionProvider session={session}>
           <ProcessingProvider>
-            <header className="border-b bg-card p-4">
-              <nav className="container mx-auto flex space-x-6">
-                <Link href="/" className="font-medium hover:underline">
-                  Home
-                </Link>
-
-                <Link href="/list" className="font-medium hover:underline">
-                  Find Events
-                </Link>
-                <Link href="/search" className="font-medium hover:underline">
-                  Find Yourself
-                </Link>
-                <Link href="/events" className="font-medium hover:underline">
-                  Events
-                </Link>
-
-                <Link
-                  href="/auth/signin"
-                  className="font-medium hover:underline"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="font-medium hover:underline"
-                >
-                  Register
-                </Link>
-
-                <LoginButton />
-              </nav>
-            </header>
-
-            {children}
-
-            {/* your floating queue indicator */}
+            <ModernLayout session={session}>
+              {children}
+            </ModernLayout>
             <ProcessingQueue />
           </ProcessingProvider>
         </SessionProvider>
