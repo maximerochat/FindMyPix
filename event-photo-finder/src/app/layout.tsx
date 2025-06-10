@@ -31,8 +31,8 @@ export default async function RootLayout({
                   Home
                 </Link>
 
-                <Link href="/manage" className="font-medium hover:underline">
-                  Manage Photos
+                <Link href="/list" className="font-medium hover:underline">
+                  Find Events
                 </Link>
                 <Link href="/search" className="font-medium hover:underline">
                   Find Yourself

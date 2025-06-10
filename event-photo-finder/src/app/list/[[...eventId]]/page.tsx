@@ -46,7 +46,7 @@ export default function EventsPage() {
             <Card
               key={evt.id}
               className="cursor-pointer"
-              onClick={() => router.push(`/events/${evt.id}/search`)}
+              onClick={() => router.push(`/events/${evt.id}`)}
             >
               <CardHeader>
                 <CardTitle>{format(new Date(evt.date), 'PPP')}</CardTitle>
