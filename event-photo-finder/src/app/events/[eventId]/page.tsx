@@ -15,6 +15,7 @@ import ImageGallery from '@/components/ImageGallery';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, X } from 'lucide-react';
 
 interface PageProps {
@@ -209,7 +210,53 @@ export default function EventDetailPage({
           : '';
 
   if (eventLoading) {
-    return <div className="p-8">Loading event...</div>;
+    return (
+      <main className="min-h-screen p-8 space-y-8">
+        {/* Event Information Skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardContent>
+        </Card>
+
+        {/* Search Section Skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-20" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Image Gallery Skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    );
   }
 
   if (!event) {

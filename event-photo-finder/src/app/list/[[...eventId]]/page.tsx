@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import apiClient from '@/lib/axios';
 import { EventOut } from '@/api/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EventsPage() {
   const router = useRouter();
@@ -28,7 +29,53 @@ export default function EventsPage() {
   }, []);
 
   if (loading) {
-    return <p className="p-8">Loading events…</p>;
+    return (
+      <main className="min-h-screen p-8 space-y-8">
+        {/* Event Information Skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardContent>
+        </Card>
+
+        {/* Search Section Skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-20" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Image Gallery Skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    );
   }
 
   if (error) {
