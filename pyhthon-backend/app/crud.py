@@ -1,3 +1,4 @@
+from operator import and_
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 import numpy as np
@@ -198,6 +199,7 @@ async def list_embeddings(
 async def find_similar(
     db: AsyncSession,
     vector: List[float],
+    event_id: int,
     limit: int = 5,
     metric: str = "cosine",
 ) -> List[Dict[str, Any]]:
@@ -222,7 +224,8 @@ async def find_similar(
             row_num,
         )
         .join(Image, Embedding.image_id == Image.id)
-        .where(dist <= threshold)     # only candidates under threshold
+        # only candidates under threshold
+        .where(and_(dist <= threshold, Image.event_id == event_id))
     )
 
     # 3) wrap it in a subquery, filter row_num == 1, sort by distance, limit

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ImageOut } from '@/api/types';
 
-import { Trash2, Download, X, ExternalLink, WifiHigh } from 'lucide-react';
+import { Trash2, Download, X, ExternalLink } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,21 +13,26 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 interface ImageGalleryProps {
   images: ImageOut[];
   title: string;
   emptyMessage: string;
+  eventId: number;
   onRemove?: (id: number) => void;
   onDownload?: (imagePath: string, imageId: number) => void;
+  onFaceClick?: (id: string) => void;
 }
 
 export default function ImageGallery({
   images,
   title,
   emptyMessage,
+  eventId,
   onRemove,
   onDownload,
+  onFaceClick,
 }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<ImageOut | null>(null);
   const [imageSize, setImageSize] = useState<number | null>(null);
@@ -36,6 +41,7 @@ export default function ImageGallery({
     { id: number; dataUrl: string }[]
   >([]);
 
+  const router = useRouter();
   const getImageUrl = (imagePath: string) =>
     `http://localhost:8000/files/${imagePath}`;
   useEffect(() => {
@@ -303,9 +309,20 @@ export default function ImageGallery({
               {faceThumbs.length > 0 ? (
                 <div className="flex flex-wrap gap-2 p-4">
                   {faceThumbs.map((thumb) => (
-                    <Link
+                    <div
                       key={thumb.id}
-                      href={`/search/${thumb.id}`}
+                      onClick={
+                        onFaceClick
+                          ? () => {
+                              onFaceClick(thumb.id);
+                              setSelectedImage(null);
+                            }
+                          : () => {
+                              router.push(
+                                `/events/${eventId}/search/${thumb.id}`,
+                              );
+                            }
+                      }
                       className={`
           relative      /* for <Image fill> positioning */
     w-12 h-12     /* 48×48px */
@@ -324,7 +341,7 @@ export default function ImageGallery({
                         unoptimized // don’t try to optimize a data-URL
                         style={{ objectFit: 'cover' }}
                       />{' '}
-                    </Link>
+                    </div>
                   ))}
                 </div>
               ) : (

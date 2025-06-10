@@ -133,6 +133,7 @@ export default function ManagePage({
         <ImageGallery
           title="Existing Pictures"
           images={images}
+          eventId={eventId}
           emptyMessage="No photos in your gallery."
           onRemove={onRemove}
         />

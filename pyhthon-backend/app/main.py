@@ -88,7 +88,7 @@ async def api_get_event(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    ev = await db.get(Event, event_id)
+    ev = await get_event(db, event_id)
     if not ev:
         raise HTTPException(404, "Event not found")
     return EventOut(
@@ -255,8 +255,9 @@ async def upload_image(
     )
 
 
-@app.post("/match", response_model=List[MatchResult])
+@app.post("/match/{event_id}", response_model=List[MatchResult])
 async def match_image(
+    event_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -276,7 +277,7 @@ async def match_image(
     target = query_embeds[0]["embedding"]
 
     # 3) find nearest neighbors in DB
-    results = await find_similar(db, target, limit=10, metric="cosine")
+    results = await find_similar(db, target, event_id, limit=10, metric="cosine")
     if not results:
         # empty list => no match under threshold
         return []
@@ -298,8 +299,9 @@ async def match_image(
     return [MatchResult(**r) for r in results]
 
 
-@app.get("/match/{emb_id}", response_model=List[MatchResult])
+@app.get("/match/{event_id}/{emb_id}", response_model=List[MatchResult])
 async def match_image_with_id(
+    event_id: int,
     emb_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: Dict = Depends(get_current_user),
@@ -310,7 +312,7 @@ async def match_image_with_id(
     if not query_embeds:
         raise HTTPException(400, detail="No face found in query image")
     # 3) find nearest neighbors in DB
-    results = await find_similar(db, query_embeds.vector, limit=10, metric="cosine")
+    results = await find_similar(db, query_embeds.vector, event_id, limit=10, metric="cosine")
 
     for res in results:
         embs = await list_embeddings(db, res["image_id"])
