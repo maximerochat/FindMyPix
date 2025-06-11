@@ -142,7 +142,7 @@ export default function MyEventsPage() {
   // Loading state
   if (status === 'loading' || loading) {
     return (
-      <div className="container mx-auto py-10 space-y-6">
+      <div className="container mx-auto p-8 space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <Skeleton className="h-8 w-48" />
