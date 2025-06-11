@@ -43,8 +43,7 @@ interface ModernLayoutProps {
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Find Events', href: '/list', icon: List },
-  { name: 'Find Yourself', href: '/search', icon: Search },
-  { name: 'Events', href: '/events', icon: Calendar },
+  { name: 'Events', href: '/my-events', icon: Calendar },
 ];
 
 export default function ModernLayout({ children, session }: ModernLayoutProps) {

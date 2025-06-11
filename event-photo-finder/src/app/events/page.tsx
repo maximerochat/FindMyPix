@@ -2,172 +2,178 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { v4 as uuidv4 } from 'uuid';
-
-import apiClient from '@/lib/axios';
-import { EventIn, EventOut } from '@/api/types';
-import { useProcessingQueue } from '@/contexts/ProcessingContext';
-import { DeleteEventButton } from '@/components/DeleteEventButton';
-// shadcn/ui components
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Search } from 'lucide-react';
+import apiClient from '@/lib/axios';
+import { EventOut } from '@/api/types';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EventsPage() {
   const router = useRouter();
-
   const [events, setEvents] = useState<EventOut[]>([]);
-  const [date, setDate] = useState<Date | undefined>();
-  const [description, setDescription] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const [filteredEvents, setFilteredEvents] = useState<EventOut[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { add, done, remove } = useProcessingQueue();
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // load events on mount
   useEffect(() => {
     apiClient
       .get<EventOut[]>('/events')
-      .then((res) => setEvents(res.data))
-      .catch((err) => console.error(err));
+      .then((res) => {
+        setEvents(res.data);
+        setFilteredEvents(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError(err.message || 'Failed to load events');
+        setLoading(false);
+      });
   }, []);
 
-  // create a new event
-  const handleCreate = async () => {
-    if (!date) {
-      setError('Please pick a date');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    const task = uuidv4();
-    add({ id: task, label: 'Creating event…' });
+  // Filter events based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredEvents(events);
+    } else {
+      const filtered = events.filter((event) => {
+        const searchLower = searchQuery.toLowerCase();
+        const title = (event as any).title || '';
+        const description = event.description || '';
+        const dateStr = format(new Date(event.date), 'PPP');
 
-    try {
-      const payload: EventIn = {
-        date: date.toISOString(),
-        description: description.trim(),
-      };
-      const res = await apiClient.post<EventOut>('/events', payload);
-      setEvents((prev) => [res.data, ...prev]);
-      setDate(undefined);
-      setDescription('');
-    } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.detail || err.message || 'Failed to create');
-    } finally {
-      done(task);
-      setLoading(false);
+        return (
+          title.toLowerCase().includes(searchLower) ||
+          description.toLowerCase().includes(searchLower) ||
+          dateStr.toLowerCase().includes(searchLower)
+        );
+      });
+      setFilteredEvents(filtered);
     }
-  };
+  }, [searchQuery, events]);
 
-  // delete an event
-  const handleDelete = async (id: number) => {
-    if (!confirm('Delete this event?')) return;
-    setLoading(true);
-    const task = uuidv4();
-    add({ id: task, label: 'Deleting event…' });
-    try {
-      await apiClient.delete(`/events/${id}`);
-      setEvents((prev) => prev.filter((e) => e.id !== id));
-    } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.detail || 'Delete failed');
-    } finally {
-      done(task);
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <main className="container mx-auto min-h-screen p-8 space-y-8">
+        {/* Header Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-48" />
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-10 w-80" />
+          </div>
+        </div>
+
+        {/* Events Grid Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="p-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold">All Events</h1>
+          <p className="text-red-500">Error: {error}</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="p-8 space-y-8">
-      <h1 className="text-3xl font-bold">Events</h1>
+    <main className="container mx-auto p-8 space-y-6">
+      {/* Header with Search */}
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold">All Events</h1>
 
-      {/* Create Event Form */}
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>Create New Event</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="event-date">Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left"
-                >
-                  {date ? format(date, 'PPP') : 'Pick a date'}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+        {/* Search Bar */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Search events by title, description, or date..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="event-desc">Description</Label>
-            <Textarea
-              id="event-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional details…"
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleCreate} disabled={loading}>
-            {loading ? 'Saving…' : 'Create Event'}
-          </Button>
-        </CardFooter>
-      </Card>
-
-      {/* List of Events */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((evt) => (
-          <Card key={evt.id} onClick={() => router.push(`/manage/${evt.id}`)}>
-            <CardHeader>
-              <CardTitle>{format(new Date(evt.date), 'PPP')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {evt.description || <em>No description</em>}
-              </p>
-            </CardContent>
-            {evt && evt.is_owner && (
-              <CardFooter className="flex justify-end">
-                <DeleteEventButton
-                  disabled={loading}
-                  onConfirm={() => handleDelete(evt.id)}
-                />
-              </CardFooter>
-            )}
-          </Card>
-        ))}
+        {/* Results Counter */}
+        {searchQuery && (
+          <p className="text-sm text-muted-foreground">
+            Found {filteredEvents.length} event
+            {filteredEvents.length !== 1 ? 's' : ''}
+            {searchQuery && ` matching "${searchQuery}"`}
+          </p>
+        )}
       </div>
+
+      {/* Events Grid */}
+      {filteredEvents.length === 0 ? (
+        <div className="text-center py-12">
+          {searchQuery ? (
+            <div className="space-y-2">
+              <p className="text-lg">No events found matching your search.</p>
+              <p className="text-muted-foreground">
+                Try adjusting your search terms or{' '}
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-blue-600 hover:underline"
+                >
+                  clear the search
+                </button>
+                .
+              </p>
+            </div>
+          ) : (
+            <p className="text-lg">No events found.</p>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEvents.map((evt) => (
+            <Card
+              key={evt.id}
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => router.push(`/events/${evt.id}`)}
+            >
+              <CardHeader>
+                <CardTitle className="line-clamp-2">
+                  {(evt as any).title || format(new Date(evt.date), 'PPP')}
+                </CardTitle>
+                {(evt as any).title && (
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(evt.date), 'PPP')}
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground line-clamp-3">
+                  {evt.description || <em>No description</em>}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

@@ -26,12 +26,14 @@ export interface MatchResult {
 
 export interface EventIn {
   date: string | Date;
+  title: string;
   description?: string;
 }
 
 export interface EventOut {
   id: number;
   is_owner: boolean;
+  title: string;
   date: string;
   description?: string;
 }

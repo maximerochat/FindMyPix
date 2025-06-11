@@ -21,6 +21,7 @@ async def create_event(
     Create a new Event from an EventIn schema.
     """
     ev = Event(
+        title=payload.title,
         user_id=user_id,
         date=payload.date,
         description=payload.description,
@@ -47,16 +48,19 @@ async def get_event(
 async def get_all_events(
     db: AsyncSession,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
+    user_id: Optional[str] = None,
 ) -> List[Event]:
     """
     Fetch a page of Events.
     """
-    q = await db.execute(
-        select(Event).order_by(Event.date.desc())
-        .offset(offset)
-        .limit(limit)
-    )
+    stmt = select(Event).order_by(
+        Event.date.desc()).offset(offset).limit(limit)
+
+    if user_id is not None:
+        stmt = stmt.where(Event.user_id == user_id)
+
+    q = await db.execute(stmt)
     return q.scalars().all()
 
 
@@ -71,16 +75,13 @@ async def update_event(
     Update an existing Event. Returns the updated object, or None if not found.
     """
     q = await db.execute(
-        select(Event).where(Event.id == event_id)
+        select(Event).where(and_(Event.id == event_id, Event.user_id == user_id))
     )
     ev = q.scalars().first()
     if not ev:
         return None
 
-    if ev.user_id != user_id:
-        return None
-
-    ev.user_id = payload.user_id
+    ev.title = payload.title
     ev.date = payload.date
     ev.description = payload.description
 
@@ -99,13 +100,10 @@ async def delete_event(
     Delete one Event by its ID. Returns True if deleted, False if not found.
     """
     q = await db.execute(
-        select(Event).where(Event.id == event_id and Event.user_id == user_id)
+        select(Event).where(and_(Event.id == event_id, Event.user_id == user_id))
     )
     ev = q.scalars().first()
     if not ev:
-        return False
-
-    if ev.user_id != user_id:
         return False
 
     await db.delete(ev)

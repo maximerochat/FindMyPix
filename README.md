@@ -7,10 +7,13 @@ Un service de recherche de visages par similarité d'embeddings, avec un backend
 ## TODO
 
 High priority:
+- Page My events
+- Add titles to events
 
 Mid:
 
 - Support easy upload of large amount of folder
+- Add picture compression 
 - On the backend create a queuing system for the treatment of large batch of files
 - Allow search with multiple pictures
 - Pageing system for large amount of images on frontend

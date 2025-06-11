@@ -22,6 +22,7 @@ class EmbeddingOut(BaseModel):
 
 
 class EventIn(BaseModel):
+    title: str
     date: datetime
     description: Optional[str] = None
 
@@ -29,6 +30,7 @@ class EventIn(BaseModel):
 class EventOut(BaseModel):
     id:          int
     date:        datetime
+    title:       str
     description: Optional[str] = None
     is_owner:    bool
 

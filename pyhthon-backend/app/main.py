@@ -75,11 +75,32 @@ async def api_create_event(
 ):
     ev = await create_event(db, user_id=current_user["id"], payload=payload)
     return EventOut(
+        title=ev.title,
         id=ev.id,
         date=ev.date,
         description=ev.description,
         is_owner=True,    # creator is always owner
     )
+
+
+@app.get("/events/my", response_model=List[EventOut])
+async def api_list_my_events(
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    evs = await get_all_events(db, user_id=current_user["id"])
+
+    me = current_user["id"]
+    return [
+        EventOut(
+            title=e.title,
+            id=e.id,
+            date=e.date,
+            description=e.description,
+            is_owner=(str(e.user_id) == me),
+        )
+        for e in evs
+    ]
 
 
 @app.get("/events/{event_id}", response_model=EventOut)
@@ -92,6 +113,7 @@ async def api_get_event(
     if not ev:
         raise HTTPException(404, "Event not found")
     return EventOut(
+        title=ev.title,
         id=ev.id,
         date=ev.date,
         description=ev.description,
@@ -109,6 +131,7 @@ async def api_list_events(
     me = current_user["id"]
     return [
         EventOut(
+            title=e.title,
             id=e.id,
             date=e.date,
             description=e.description,
@@ -134,12 +157,12 @@ async def api_update_event(
         raise HTTPException(404, "Event not found")
 
     return EventOut(
+        title=ev.title,
         id=ev.id,
         date=ev.date,
         description=ev.description,
         is_owner=True,
     )
-    return ev
 
 
 @app.delete(
@@ -152,7 +175,9 @@ async def api_delete_event(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    ok = await delete_event(db, event_id, current_user["id"])
+    ok = await delete_event(db, event_id=event_id, user_id=current_user["id"])
+    print("Ok is", ok)
+    print(event_id)
     if not ok:
         raise HTTPException(404, "Event not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)

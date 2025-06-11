@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Trash2 } from 'lucide-react';
 
 interface DeleteEventButtonProps {
   onConfirm: () => void;
@@ -28,8 +29,13 @@ export function DeleteEventButton({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" disabled={disabled}>
-          Delete
+        <Button
+          variant="destructive"
+          className="align-center"
+          size="sm"
+          disabled={disabled}
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

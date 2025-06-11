@@ -55,6 +55,7 @@ class Event(Base):
     __tablename__ = "events"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(UUID, nullable=False)
+    title = Column(String, nullable=False)
     date = Column(DateTime(timezone=True), nullable=False)
     description = Column(String)
     images = relationship("Image", back_populates="event",
