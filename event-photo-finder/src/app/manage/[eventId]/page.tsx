@@ -115,40 +115,47 @@ export default function ManagePage({
     setFiles(e.target.files);
   }
 
-  async function onUpload() {
-    if (!files?.length) return;
-    setLoading(true);
+  async function onUpload(): Promise<void> {
+    if (!files?.length) return
+    setLoading(true)
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const taskId = `${file.name}-${Date.now()}`;
-      add({ id: taskId, label: file.name });
+    // 1) Convert FileList → File[]
+    const filesArray: File[] = Array.from(files)
 
-      const form = new FormData();
-      form.append('file', file);
+    // 2+3) Map to an async callback, returns Promise<void> each
+    const uploadPromises = filesArray.map(async (file: File) => {
+      const taskId = `${file.name}-${Date.now()}`
+      add({ id: taskId, label: file.name })
+
+      const form = new FormData()
+      form.append('file', file)
 
       try {
         const response = await apiClient.post<ImageOut>(
           `/images/${eventId}`,
-          form,
-        );
-        setImages((prev) => [response.data, ...prev]);
-        done(taskId);
+          form
+        )
+        setImages((prev) => [response.data, ...prev])
+        done(taskId)
       } catch (err: unknown) {
-        console.error(err);
+        console.error(err)
         if (axios.isAxiosError(err)) {
           const detail =
             (err.response?.data as any)?.detail ||
-            (err.response?.data as any)?.message;
-          console.error('Upload failed:', detail);
+            (err.response?.data as any)?.message
+          console.error('Upload failed:', detail)
         }
-        remove(taskId);
+        remove(taskId)
       }
-    }
+    })
 
-    setFiles(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    setLoading(false);
+    // wait for all uploads (success or failure) to settle
+    await Promise.all(uploadPromises)
+
+    // cleanup
+    setFiles(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    setLoading(false)
   }
 
   //

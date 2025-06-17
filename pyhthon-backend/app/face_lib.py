@@ -43,8 +43,7 @@ def match_faces(
     if len(target_objs) == 0:
         raise ValueError("No face found in target_img")
     if len(target_objs) > 1 and not silent:
-        logger.info(f"Found {len(target_objs)
-                             } faces in target_img, using the first one.")
+        logger.info(f"Found {len(target_objs)} faces in target_img, using the first one.")
     target_face = target_objs[0]["face"]
     target_embedding = DeepFace.representation.represent(
         img_path=target_face,

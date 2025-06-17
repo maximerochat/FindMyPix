@@ -1,78 +1,78 @@
 # FindMyPix
 
-Un service de recherche de visages par similarité d'embeddings, avec un backend Python/SQLAlchemy/PostgreSQL + pgvector et un frontend Next.js.
+A face-similarity search service using embeddings, with a Python/SQLAlchemy/PostgreSQL + pgvector backend and a Next.js frontend.
 
 ---
 
 ## TODO
 
-High priority:
-- Page My events
+**High priority**  
+- My Events page  
 - Add titles to events
 
-Mid:
+**Mid priority**  
+- Bulk-folder upload support  
+- Image compression on upload  
+- Backend queuing for large batches  
+- Multi-image search  
+- Frontend pagination for large galleries  
+- Draw bounding boxes around detected faces
 
-- Support easy upload of large amount of folder
-- Add picture compression 
-- On the backend create a queuing system for the treatment of large batch of files
-- Allow search with multiple pictures
-- Pageing system for large amount of images on frontend
-- Show some markers around the face identified
-
-Low:
-
-- Better confirm button when deleting
-- More status info when uploading (pending, maybe a pogress bar depending of the number of faces discovered?)
+**Low priority**  
+- Better delete confirmation  
+- More upload status info (pending, progress bar, face count…)
 
 ---
 
-## Table des matières
+## Table of Contents
 
-1. [Description](#description)
-2. [Prérequis](#prérequis)
-3. [Installation](#installation)
-4. [Configuration de la base de données](#configuration-de-la-base-de-données)
-5. [Migrations Alembic](#migrations-alembic)
-6. [Reset / Réinitialisation rapide](#reset--réinitialisation-rapide)
-7. [Lancer le backend](#lancer-le-backend)
-8. [Lancer le frontend Next.js](#lancer-le-frontend-nextjs)
-9. [Contribuer](#contribuer)
+1. [Description](#description)  
+2. [Prerequisites](#prerequisites)  
+3. [Installation](#installation)  
+4. [Database Configuration](#database-configuration)  
+5. [Alembic Migrations](#alembic-migrations)  
+6. [Quick Reset](#quick-reset)  
+7. [Running the Backend](#running-the-backend)  
+8. [Running the Auth DB (Docker)](#running-the-auth-db-docker)  
+9. [Prisma Setup (Next.js)](#prisma-setup-nextjs)  
+10. [Running the Frontend](#running-the-frontend)  
+11. [Environment Files](#environment-files)  
+12. [Contributing](#contributing)
 
 ---
 
 ## Description
 
-Ce projet permet :
-
-- d’extraire des embeddings de visages à partir d’images,
-- de les stocker dans une base PostgreSQL enrichie de l’extension pgvector,
-- de faire des recherches de plus proches voisins (ANN) via SQL.
-- de proposer une interface web simple en Next.js pour l’upload et la recherche.
+- Extract face embeddings from images  
+- Store them in PostgreSQL with the pgvector extension  
+- Perform ANN searches via SQL  
+- Provide a simple Next.js UI for upload and search
 
 ---
 
-## Prérequis
+## Prerequisites
 
-- Linux / macOS / Windows WSL
-- Git
-- Python 3.8+
-- Node.js 16+ et npm/yarn
-- PostgreSQL 14+
-- `pgvector` (extension PostgreSQL)
+- Linux/macOS/Windows WSL  
+- Git  
+- Python 3.8+  
+- Node.js 16+ and npm/yarn  
+- Docker (for the NextAuth DB)  
+- PostgreSQL 14+ (backend Python)  
+- `pgvector` PostgreSQL extension
 
 ---
 
 ## Installation
 
-1. Clonez le dépôt
+1. Clone the repo
 
    ```bash
-   git clone https://github.com/votre-utilisateur/FindMyPix.git
+   git clone https://github.com/your-username/FindMyPix.git
    cd FindMyPix
-
    ```
 
-2. Créez un environnement Python virtuel et installez les dépendances
+2. Backend (Python)
+
    ```bash
    cd python-backend
    python3 -m venv .venv
@@ -83,9 +83,9 @@ Ce projet permet :
 
 ---
 
-## Configuration de la base de données
+## Database Configuration
 
-1. Installez PostgreSQL et l’extension pgvector
+1. Install PostgreSQL & pgvector
 
    ```bash
    sudo apt update
@@ -94,90 +94,195 @@ Ce projet permet :
    cd pgvector && make && sudo make install && cd ..
    ```
 
-2. Démarrez PostgreSQL et créez l’utilisateur/la base
+2. Create role, database & extension _line by line_
 
    ```bash
-   sudo systemctl start postgresql
-   sudo -u postgres psql <<SQL
-   CREATE ROLE face_user WITH LOGIN PASSWORD 'votre_mot_de_passe';
+   sudo -u postgres psql
+   ```
+
+   In the `psql` prompt:
+
+   ```sql
+   CREATE ROLE face_user WITH LOGIN PASSWORD 'your_password';
    CREATE DATABASE face_db OWNER face_user;
    \c face_db
    CREATE EXTENSION IF NOT EXISTS vector;
    \q
    ```
 
-3. Exportez l’URL de connexion
+3. Export the connection URL
+
    ```bash
-   export DATABASE_URL="postgresql+psycopg2://face_user:votre_mot_de_passe@localhost:5432/face_db"
+   export DATABASE_URL="postgresql+psycopg2://face_user:your_password@\
+localhost:5432/face_db"
    ```
 
 ---
 
-## Migrations Alembic
+## Alembic Migrations
 
-1. Initialisez (si ce n’est pas déjà fait)
+1. Initialize (if needed)
+
    ```bash
    alembic init migrations
    ```
-2. Vérifiez que dans `migrations/env.py` vous importez bien `Base` et définissez
+
+2. In `migrations/env.py`, point to your `Base`:
+
    ```python
    from your_module import Base
    target_metadata = Base.metadata
    ```
-3. Générez la migration initiale
+
+3. Generate & apply
+
    ```bash
    alembic revision --autogenerate -m "create faces schema"
-   ```
-4. Appliquez-la
-   ```bash
    alembic upgrade head
    ```
 
 ---
 
-## Reset / Réinitialisation rapide
-
-En développement, pour repartir à zéro :
+## Quick Reset
 
 ```bash
-# Option A : drop & recreate DB
+# Option A: drop & recreate
 dropdb face_db
 createdb face_db
 psql -d face_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
 alembic upgrade head
 
-# Option B : Alembic downgrade base + upgrade
+# Option B: alembic downgrade & upgrade
 alembic downgrade base
 alembic upgrade head
 ```
 
 ---
 
-## Lancer le backend
-
-Le code d’exemple se trouve dans `main.py` ou via un script CLI :
+## Running the Backend
 
 ```bash
+cd python-backend
 source .venv/bin/activate
 uvicorn app.main:app \
   --reload \
   --host 0.0.0.0 \
   --port 8000
-
 ```
-
-Vous pouvez aussi exposer une API (FastAPI/Flask) dans `app.py`, etc.
 
 ---
 
-## Lancer le frontend Next.js
+## Running the Auth DB (Docker)
+
+NextAuth needs its own PostgreSQL. Launch it with Docker:
+
+```bash
+docker run -d \
+  --name my_app_db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=my_app \
+  -p 5435:5432 \
+  postgres:14
+```
+
+Verify it’s running:
+
+```bash
+docker ps | grep my_app_db
+```
+
+---
+
+## Prisma Setup (Next.js)
+
+1. In the Next.js folder:
+
+   ```bash
+   cd event-photo-finder
+   npm install prisma @prisma/client
+   ```
+
+2. Initialize Prisma (if not already done):
+
+   ```bash
+   npx prisma init
+   ```
+
+3. Make sure your existing `prisma/schema.prisma` defines the required models for NextAuth (e.g. User, Account, Session, VerificationToken).
+
+4. Run migration & generate the client:
+
+   ```bash
+   npx prisma migrate dev --name init
+   npx prisma generate
+   ```
+
+5. Configure NextAuth in `pages/api/auth/[...nextauth].ts`:
+
+   ```ts
+   import { PrismaAdapter } from "@next-auth/prisma-adapter";
+   import { PrismaClient } from "@prisma/client";
+   import NextAuth from "next-auth";
+   import Providers from "next-auth/providers";
+
+   const prisma = new PrismaClient();
+
+   export default NextAuth({
+     adapter: PrismaAdapter(prisma),
+     providers: [
+       Providers.GitHub({
+         clientId: process.env.GITHUB_ID!,
+         clientSecret: process.env.GITHUB_SECRET!,
+       }),
+     ],
+     secret: process.env.NEXTAUTH_SECRET,
+   });
+   ```
+
+---
+
+## Running the Frontend
 
 ```bash
 cd event-photo-finder
-npm install    # ou yarn
-npm run dev    # démarrer le serveur de développement
+npm install    # or yarn
+npm run dev
 ```
 
-Ouvrez http://localhost:3000 dans votre navigateur.
+Open http://localhost:3000
 
 ---
+
+## Environment Files
+
+Create these two files in `event-photo-finder/` (they’re gitignored):
+
+.env
+```dotenv
+DATABASE_URL="postgresql://postgres:password@localhost:5435/my_app"
+FACE_API_HOST="http://localhost:8000"
+```
+
+.env.local
+```dotenv
+NEXTAUTH_SECRET=your-secret-key-here
+NEXTAUTH_URL="http://localhost:3000"
+
+DATABASE_URL="postgresql://postgres:password@localhost:5435/my_app"
+FACE_API_HOST="http://localhost:8000"
+NEXT_PUBLIC_EXTERNAL_API="http://localhost:8000"
+NEXT_PUBLIC_EXTERNAL="http://localhost:8000"
+NEXTAUTH_JWT_ENCRYPTION_KEY="DDdmKcM+h6bILUz0G0R48mm6HO2AlSXs/f6zkkN6sog="
+```
+
+---
+
+## Contributing
+
+1. Fork the repo  
+2. Create a branch `feature/...`  
+3. Commit your changes & tests  
+4. Open a Pull Request  
+
+Thank you for your contributions!

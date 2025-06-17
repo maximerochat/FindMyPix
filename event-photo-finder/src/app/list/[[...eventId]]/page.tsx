@@ -19,10 +19,16 @@ export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    console.log("Here")
+    console.log(apiClient)
     apiClient
       .get<EventOut[]>('/events')
       .then((res) => {
         setEvents(res.data);
+        console.log("HOLA")
+        console.log(res.data)
+        console.log(res.config)
+        console.log(process.env.NEXT_PUBLIC_EXTERNAL_API,)
         setFilteredEvents(res.data);
         setLoading(false);
       })
@@ -149,7 +155,7 @@ export default function EventsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((evt) => (
+          {filteredEvents && filteredEvents.map((evt) => (
             <Card
               key={evt.id}
               className="cursor-pointer hover:shadow-lg transition-shadow"
