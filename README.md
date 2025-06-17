@@ -113,8 +113,7 @@ A face-similarity search service using embeddings, with a Python/SQLAlchemy/Post
 3. Export the connection URL
 
    ```bash
-   export DATABASE_URL="postgresql+psycopg2://face_user:your_password@\
-localhost:5432/face_db"
+   export DATABASE_URL="postgresql+psycopg2://face_user:your_password@\localhost:5432/face_db"
    ```
 
 ---
