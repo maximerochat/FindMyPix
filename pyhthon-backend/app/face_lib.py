@@ -15,7 +15,7 @@ def match_faces(
     model_name: str = "ArcFace",
     distance_metric: str = "cosine",
     detector_backend: str = "retinaface",
-    enforce_detection: bool = True,
+    enforce_detection: bool = False,
     align: bool = True,
     expand_percentage: int = 0,
     normalization: str = "base",
@@ -144,7 +144,7 @@ def get_embeddings(
     img: Union[str, np.ndarray],
     model_name: str = "ArcFace",
     detector_backend: str = "retinaface",
-    enforce_detection: bool = True,
+    enforce_detection: bool = False,
     align: bool = True,
     expand_percentage: int = 0,
     normalization: str = "base",
@@ -159,6 +159,7 @@ def get_embeddings(
         enforce_detection=enforce_detection,
         align=align,
         expand_percentage=expand_percentage,
+        anti_spoofing=True
     )
     embeddings: List[Dict[str, Any]] = []
     # 2) embed each face
@@ -169,8 +170,9 @@ def get_embeddings(
             model_name=model_name,
             enforce_detection=False,
             detector_backend="skip",
-            align=False,
-            normalization=normalization,
+            normalization=model_name,
+            anti_spoofing=True
+            
         )
         rep[0]["facial_area"] = obj["facial_area"]
         embeddings.append(rep[0])

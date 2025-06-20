@@ -6,6 +6,7 @@ from typing import Any, List, Dict
 from app.models import Embedding
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
 from app.helpers import get_current_user
@@ -250,10 +251,13 @@ async def upload_image(
     img = await get_or_create_image(db, file.filename, event_id)
 
     # 3) Extract embeddings + bboxes via face_lib
-    embeds = get_embeddings(path)
+    embeds = await run_in_threadpool(get_embeddings, path)
     if not embeds:
-        raise HTTPException(400, detail="No faces detected in image")
-
+        return ImageOut(
+        id=img.id,
+        path=img.path,
+        embeddings=[],
+        )
     # 4) Persist each embedding
     for emb in embeds:
         bbox = emb["facial_area"]

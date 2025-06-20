@@ -7,20 +7,20 @@ A face-similarity search service using embeddings, with a Python/SQLAlchemy/Post
 ## TODO
 
 **High priority**  
-- My Events page  
-- Add titles to events
+- Create the procesing queue also in the backend so that reloading the page does not make you lose the whole state. Or store in cookies ? , also give additional data fetch via polling ?
+- Support big galleries
+- Image show with proper aspect ratio + size when clicked
 
 **Mid priority**  
 - Bulk-folder upload support  
-- Image compression on upload  
-- Backend queuing for large batches  
-- Multi-image search  
-- Frontend pagination for large galleries  
-- Draw bounding boxes around detected faces
+- Backend queuing for large batches 
+- Multi-image search  / Video from our face from left to right
+- If input image as multiple detected visage prompt to choose a specific one
 
 **Low priority**  
-- Better delete confirmation  
+- Better delete confirmation on manage page
 - More upload status info (pending, progress bar, face count…)
+- Draw bounding boxes around detected faces
 
 ---
 
