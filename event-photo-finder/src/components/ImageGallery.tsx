@@ -1,7 +1,6 @@
 // src/components/ImageGallery.tsx
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { ImageOut } from '@/api/types';
 
 import { Trash2, Download, X, ExternalLink } from 'lucide-react';
@@ -22,7 +21,7 @@ interface ImageGalleryProps {
   eventId: number;
   onRemove?: (id: number) => void;
   onDownload?: (imagePath: string, imageId: number) => void;
-  onFaceClick?: (id: string) => void;
+  onFaceClick?: (id: number) => void;
 }
 
 export default function ImageGallery({
@@ -36,7 +35,10 @@ export default function ImageGallery({
 }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<ImageOut | null>(null);
   const [imageSize, setImageSize] = useState<number | null>(null);
-  const [selectedFaceId, setSelectedFaceId] = useState<number | null>(null);
+  const [imageDims, setImageDims] = useState<{
+    width: number
+    height: number
+  } | null>(null);
   const [faceThumbs, setFaceThumbs] = useState<
     { id: number; dataUrl: string }[]
   >([]);
@@ -47,7 +49,6 @@ export default function ImageGallery({
   useEffect(() => {
     if (!selectedImage) {
       setImageSize(null);
-      setSelectedFaceId(null);
       return;
     }
   }, [selectedImage]);
@@ -63,6 +64,7 @@ export default function ImageGallery({
   useEffect(() => {
     if (!selectedImage) {
       setImageSize(null);
+      setImageDims(null);
       setFaceThumbs([]);
       return;
     }
@@ -80,6 +82,10 @@ export default function ImageGallery({
       img.crossOrigin = 'anonymous';
       img.src = getImageUrl(selectedImage.path);
       img.onload = () => {
+        setImageDims({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        })
         const thumbs = selectedImage
           .embeddings!.map((emb) => {
             // crop region emb.x,emb.y,emb.w,emb.h
@@ -109,7 +115,7 @@ export default function ImageGallery({
           .filter((x): x is { id: number; dataUrl: string } => !!x);
         setFaceThumbs(thumbs);
       };
-      img.onerror = () => setFaceThumbs([]);
+      img.onerror = () => { setFaceThumbs([]); setImageDims(null); setImageSize(null) }
     }
   }, [selectedImage]);
   useEffect(() => {
@@ -293,6 +299,28 @@ export default function ImageGallery({
           {/* Scrollable body */}
           {selectedImage && (
             <div className="p-4 space-y-6">
+
+              {imageDims && (
+
+                <div
+                  className="inline-block overflow-hidden
+                               rounded-lg shadow bg-slate-50"
+                >
+                  <Image
+                    src={getImageUrl(selectedImage.path)}
+                    alt={`Photo ${selectedImage.id}`}
+                    unoptimized
+                    width={imageDims.width}
+                    height={imageDims.height}
+                    style={{
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                  />
+                </div>
+              )}
+              {/*
+            <div className="p-4 space-y-6">
               <div className="overflow-hidden rounded-lg shadow bg-slate-50">
                 <div className="relative w-full aspect-video">
                   <Image
@@ -300,10 +328,11 @@ export default function ImageGallery({
                     alt={`Photo ${selectedImage.id}`}
                     fill
                     unoptimized
-                    style={{ objectFit: 'cover' }}
+                    style={{ objectFit: 'contain' }}
                   />
                 </div>
               </div>
+    */}
 
               {/* FACE PICKER */}
               {faceThumbs.length > 0 ? (
@@ -314,14 +343,14 @@ export default function ImageGallery({
                       onClick={
                         onFaceClick
                           ? () => {
-                              onFaceClick(thumb.id);
-                              setSelectedImage(null);
-                            }
+                            onFaceClick(thumb.id);
+                            setSelectedImage(null);
+                          }
                           : () => {
-                              router.push(
-                                `/events/${eventId}/search/${thumb.id}`,
-                              );
-                            }
+                            router.push(
+                              `/events/${eventId}/search/${thumb.id}`,
+                            );
+                          }
                       }
                       className={`
           relative      /* for <Image fill> positioning */
@@ -350,7 +379,7 @@ export default function ImageGallery({
             </div>
           )}
         </DialogContent>
-      </Dialog>
+      </Dialog >
     </>
   );
 }
