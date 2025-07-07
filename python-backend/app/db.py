@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://face_user:admin@localhost:5432/face_db"
+    ""
 )
 
 engine = create_async_engine(

@@ -2,6 +2,9 @@ import os
 import time
 import shutil
 from typing import Any, List, Dict
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=".env.local", override=True)
 
 from app.models import Embedding
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Response
@@ -12,7 +15,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.helpers import get_current_user
 from uuid import UUID
 from datetime import datetime
-
 from .db import engine, Base
 from .crud import (
     get_embedding_by_id,
@@ -40,16 +42,14 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
-
-    # "https://my.production.frontend.com",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,        # <-- addresses that are allowed to talk to this API
+    allow_origins=origins,        
     allow_credentials=True,
-    allow_methods=["*"],          # <-- GET, POST, PUT, DELETE, OPTIONS, etc
-    allow_headers=["*"],          # <-- any headers (e.g. Authorization)
+    allow_methods=["*"],         
+    allow_headers=["*"],        
 )
 
 

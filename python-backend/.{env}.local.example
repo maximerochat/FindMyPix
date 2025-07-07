@@ -1,0 +1,3 @@
+# Database Configuration
+# PostgreSQL connection string: postgresql+asyncpg://user:password@host:port/database_name
+DATABASE_URL="postgresql+asyncpg://<db_user>:<db_password>@<host>:<port>/<database_name>"

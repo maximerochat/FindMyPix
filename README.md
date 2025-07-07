@@ -4,26 +4,6 @@ A face-similarity search service using embeddings, with a Python/SQLAlchemy/Post
 
 ---
 
-## TODO
-
-**High priority**  
-- Create the procesing queue also in the backend so that reloading the page does not make you lose the whole state. Or store in cookies ? , also give additional data fetch via polling ?
-- Support big galleries
-- Image show with proper aspect ratio + size when clicked
-
-**Mid priority**  
-- Bulk-folder upload support  
-- Backend queuing for large batches 
-- Multi-image search  / Video from our face from left to right
-- If input image as multiple detected visage prompt to choose a specific one
-
-**Low priority**  
-- Better delete confirmation on manage page
-- More upload status info (pending, progress bar, face count…)
-- Draw bounding boxes around detected faces
-
----
-
 ## Table of Contents
 
 1. [Description](#description)  
@@ -81,6 +61,8 @@ A face-similarity search service using embeddings, with a Python/SQLAlchemy/Post
    pip install -r requirements.txt
    ```
 
+   You will also need to install PyTorch, you can find the install command on their [site](https://pytorch.org/get-started/locally/). Make sure that you donwload the proper version that match your cuda toolkit version ;)
+
 ---
 
 ## Database Configuration
@@ -112,9 +94,11 @@ A face-similarity search service using embeddings, with a Python/SQLAlchemy/Post
 
 3. Export the connection URL
 
-   ```bash
-   export DATABASE_URL="postgresql+psycopg2://face_user:your_password@localhost:5432/face_db"
-   ```
+   ### Environment Variables
+   Before running the application, you'll need to set up your environment variables.
+   Create a `.env.local` file in the root directory and populate it with your
+   configuration. You can use the provided `.env.local.example` file as a
+   reference for the required variables.
 
 ---
 
@@ -176,20 +160,9 @@ uvicorn app.main:app \
 NextAuth needs its own PostgreSQL. Launch it with Docker:
 
 ```bash
-docker run -d \
-  --name my_app_db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=my_app \
-  -p 5435:5432 \
-  postgres:14
+docker compose up -d
 ```
 
-Verify it’s running:
-
-```bash
-docker ps | grep my_app_db
-```
 
 ---
 
@@ -217,33 +190,17 @@ docker ps | grep my_app_db
    npx prisma generate
    ```
 
-5. Configure NextAuth in `pages/api/auth/[...nextauth].ts`:
-
-   ```ts
-   import { PrismaAdapter } from "@next-auth/prisma-adapter";
-   import { PrismaClient } from "@prisma/client";
-   import NextAuth from "next-auth";
-   import Providers from "next-auth/providers";
-
-   const prisma = new PrismaClient();
-
-   export default NextAuth({
-     adapter: PrismaAdapter(prisma),
-     providers: [
-       Providers.GitHub({
-         clientId: process.env.GITHUB_ID!,
-         clientSecret: process.env.GITHUB_SECRET!,
-       }),
-     ],
-     secret: process.env.NEXTAUTH_SECRET,
-   });
-   ```
+5. Setup environement
+   On the frontend there is also 2 env files that you need to have. the .env and .env.local, there are respectievely .{env}.example and .{env}.local.example that are starting point for you.
+   
 
 ---
 
 ## Running the Frontend
 
 ```bash
+
+docker compose up -d
 cd event-photo-finder
 npm install    # or yarn
 npm run dev
@@ -253,35 +210,20 @@ Open http://localhost:3000
 
 ---
 
-## Environment Files
+## TODO
 
-Create these two files in `event-photo-finder/` (they’re gitignored):
+**High priority**  
+- Create the procesing queue also in the backend so that reloading the page does not make you lose the whole state. store in cookies and give additional data fetch via polling
+- Add optimization features to support large galleries
 
-.env
-```dotenv
-DATABASE_URL="postgresql://postgres:password@localhost:5435/my_app"
-FACE_API_HOST="http://localhost:8000"
-```
+**Mid priority**  
+- Bulk-folder upload support
+- Multi-image search  / Video from our face from left to right
+- If input image as multiple detected visage prompt to choose a specific one
 
-.env.local
-```dotenv
-NEXTAUTH_SECRET=your-secret-key-here
-NEXTAUTH_URL="http://localhost:3000"
+**Low priority**  
+- Better delete confirmation on manage page
+- More upload status info (pending, progress bar, face count…)
+- Draw bounding boxes around detected faces
 
-DATABASE_URL="postgresql://postgres:password@localhost:5435/my_app"
-FACE_API_HOST="http://localhost:8000"
-NEXT_PUBLIC_EXTERNAL_API="http://localhost:8000"
-NEXT_PUBLIC_EXTERNAL="http://localhost:8000"
-NEXTAUTH_JWT_ENCRYPTION_KEY="DDdmKcM+h6bILUz0G0R48mm6HO2AlSXs/f6zkkN6sog="
-```
 
----
-
-## Contributing
-
-1. Fork the repo  
-2. Create a branch `feature/...`  
-3. Commit your changes & tests  
-4. Open a Pull Request  
-
-Thank you for your contributions!

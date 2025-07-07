@@ -16,7 +16,6 @@ async def validate_token(token: str) -> Optional[Dict]:
     """
     try:
         nextauth_url = os.getenv("NEXTAUTH_URL", "http://localhost:3000")
-        test_tok = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoiWjdYVUwwLW4wOHMtVHFMaHR2eVV4Y25zekJzLXlZTzhpbG82cVEzWGZaTUpOUVd0TDN1dUNtcExwWHNFR01ZVElWY2hVWDZWV3hXcHBKbTN2MUhrZ3cifQ..g-HN1FchVvXl3nFclY-h9A.SmMBlFVPEmhHrBLU9ReN0Xv7WircvGG9fwNoEpzOEqCn5_Xx99UCv9YAY4OBkYHfvGCMuitcrNryrDWR1OhMhwQHqiG53SSj-FO_US9hN81ZXL1BembCAnGwDUEwBg5spTs38Dj7Y-mUfQKodVSk9KODFl4OpUSXEpCKf541r3oQsP38nVP9i-Jtno7X5iAQblmArp-NUu51s8FtgkfKkmU0ZCTVIekOeVqkqUM5CHL9Z_leZEN8VpXNX0Hrsxf-8-4x5TS03dagB80tbZj70KCSKIyiWYy0QfyrtqT-tMs.4_FG__-oM6EQvvbZ8ouEtYmUGVaxvOWacV9THlkA-wI"
         response = requests.post(
             f"{nextauth_url}/api/auth/validate",
             json={"token": token},
@@ -28,7 +27,6 @@ async def validate_token(token: str) -> Optional[Dict]:
             data = response.json()
             return data.get("user") if data.get("valid") else None
 
-        print(f"Token validation failed with status: {response.status_code}")
         return None
 
     except requests.RequestException as e:
@@ -64,9 +62,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict:
             status_code=401,
             detail="Invalid authorization header format"
         )
-    print("Token is ", token)
     user_data = await validate_token(token)
-    print("User data: ", user_data)
 
     if not user_data:
         raise HTTPException(

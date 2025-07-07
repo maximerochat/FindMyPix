@@ -9,3 +9,4 @@ package-lock.json
 *.png
 event_photos
 db
+.env.local

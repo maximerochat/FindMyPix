@@ -1,0 +1,5 @@
+NEXTAUTH_SECRET=your-secret-key-here
+NEXTAUTH_URL=http://localhost:3000
+
+NEXT_PUBLIC_EXTERNAL_API=http://localhost:8000
+NEXTAUTH_JWT_ENCRYPTION_KEY=your-secrect-key-here
