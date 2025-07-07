@@ -106,9 +106,6 @@ tensorflow-io-gcs-filesystem==0.37.1
 termcolor==3.1.0
 tf_keras==2.19.0
 tomli==2.2.1
-torch==2.7.1+cu128
-torchaudio==2.7.1+cu128
-torchvision==0.22.1+cu128
 tqdm==4.67.1
 triton==3.3.1
 typing-inspection==0.4.1
