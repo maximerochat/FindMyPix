@@ -5,3 +5,7 @@ pyhthon-backend/data/*
 
 node_modules
 package-lock.json
+
+*.png
+event_photos
+db
