@@ -3,7 +3,7 @@
 A face-similarity search service using embeddings, with a Python/SQLAlchemy/PostgreSQL + pgvector backend and a Next.js frontend.
 
 ---
-
+[![Demo video](findmypix_demo.gif)](findypix_cut_video.mp4)
 ## Table of Contents
 
 1. [Description](#description)  
